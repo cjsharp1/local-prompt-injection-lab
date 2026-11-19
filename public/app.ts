@@ -6,8 +6,11 @@
  * pipeline view, and preview the default ticket.
  *
  * Run: POST /api/run with the selected attack (or benign ticket), the
- * defence switches, the model and the reasoning switch. The response is a
- * stream of Server-Sent Events, read here line by line:
+ * defence switches, the model and the reasoning switch. While it runs, the
+ * Run button becomes Stop and progress.ts shows the elapsed time and the
+ * current step. Stop aborts the request; the server notices the closed
+ * connection and stops asking the model. The response is a stream of
+ * Server-Sent Events, read here line by line:
  *
  *   log       → a row in the activity log (and a card in the pipeline view)
  *   confirm   → the confirmation dialog; the answer goes to /api/confirm
@@ -23,11 +26,22 @@ import { renderDefenses } from "./defenses.js";
 import { byId, el } from "./dom.js";
 import { appendLog, clearLog, logDivider } from "./log.js";
 import { initPipeline, resetPipeline, showOutcome } from "./pipeline.js";
+import { setStep, startProgress, stepFromLog, stopProgress } from "./progress.js";
 import { renderResults } from "./results.js";
 import { selectedAttack, state } from "./state.js";
 import { initEditor, renderLanding, renderPicker } from "./studio.js";
 import type { LibraryResponse, MetaResponse, PreviewResponse, StreamEvent } from "./types.js";
-import { clearRecord, renderRecord, renderTicket } from "./workspace.js";
+import { clearRecord, renderRecord, renderTicket, showWaiting } from "./workspace.js";
+
+/** Aborts the run in progress, when Stop is pressed. */
+let runAbort: AbortController | undefined;
+
+/** Run ↔ Stop: the same button, so there is always one obvious thing to press. */
+function setRunButton(running: boolean): void {
+  const button = byId<HTMLButtonElement>("run");
+  button.textContent = running ? "Stop" : "Run";
+  button.classList.toggle("stop", running);
+}
 
 function banner(message: string | undefined): void {
   const node = byId("banner");
@@ -65,11 +79,16 @@ function showTab(name: string): void {
 }
 
 async function run(): Promise<void> {
-  if (state.running) return;
+  if (state.running) {
+    runAbort?.abort();
+    return;
+  }
   state.running = true;
-  byId<HTMLButtonElement>("run").disabled = true;
+  runAbort = new AbortController();
+  setRunButton(true);
+  startProgress();
   banner(undefined);
-  clearRecord();
+  showWaiting();
   resetPipeline();
   const a = state.customAttack !== undefined ? "your attack" : selectedAttack()?.title ?? `benign ${state.benignId}`;
   logDivider(`${a} · ${state.model} · stack ${state.stack}`);
@@ -80,6 +99,7 @@ async function run(): Promise<void> {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ ...itemBody(), model: state.model, reasoning: state.reasoning, defenses: state.defenses }),
+      signal: runAbort.signal,
     });
     if (!response.ok || !response.body) {
       const data = await response.json().catch(() => ({})) as { error?: string };
@@ -101,11 +121,19 @@ async function run(): Promise<void> {
         if (line) handle(JSON.parse(line.slice(6)) as StreamEvent);
       }
     }
+    stopProgress(state.lastRecord?.outcome.kind === "error" ? "failed" : "done");
   } catch (error: unknown) {
-    banner(error instanceof Error ? error.message : String(error));
+    if (error instanceof DOMException && error.name === "AbortError") {
+      stopProgress("stopped");
+      clearRecord();
+    } else {
+      stopProgress("failed");
+      banner(error instanceof Error ? error.message : String(error));
+    }
   } finally {
     state.running = false;
-    byId<HTMLButtonElement>("run").disabled = false;
+    runAbort = undefined;
+    setRunButton(false);
   }
 }
 
@@ -113,12 +141,17 @@ function handle(event: StreamEvent): void {
   switch (event.type) {
     case "log":
       appendLog(event.event);
+      stepFromLog(event.event);
       return;
     case "confirm":
-      void askPerson(event.message).then((allow) =>
-        fetch("/api/confirm", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: event.id, allow }) }));
+      setStep("Waiting for your answer in the dialog…");
+      void askPerson(event.message).then((allow) => {
+        setStep(allow ? "Allowed — the tool is running…" : "Declined — carrying on without it…");
+        return fetch("/api/confirm", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: event.id, allow }) });
+      });
       return;
     case "result":
+      setStep("Scoring the run…");
       state.lastRecord = event.record;
       renderRecord(event.record);
       showOutcome(event.record);

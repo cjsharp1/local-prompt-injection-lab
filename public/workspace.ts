@@ -104,6 +104,11 @@ export function renderRecord(record: RunRecord): void {
   ]);
 }
 
+/** While a run is going: say so, rather than showing an empty reply. */
+export function showWaiting(): void {
+  byId("result-view").replaceChildren(el("p", { class: "waiting", text: "The assistant is working on this ticket. Its reply, the outbox and the outcome appear here when the run finishes. The activity log shows each step as it happens." }));
+}
+
 export function clearRecord(): void {
   byId("result-view").replaceChildren(el("p", { class: "muted", text: "Run the ticket to see the assistant's reply, the outbox and the outcome." }));
 }
