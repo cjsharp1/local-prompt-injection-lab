@@ -16,6 +16,10 @@
  *
  *   <attack-id>      run one attack from attacks/ (the file name, without .json)
  *   --benign B01     or run one benign ticket (attacks/benign/B01-*.json)
+ *   --all            or run EVERY attack and benign ticket once, one summary
+ *                    line each — the library's smoke test. (The arena,
+ *                    `npm run arena`, is the measured version: seeds,
+ *                    stacks, models, a results file.)
  *   --stack NAME     a named defence stack (default "none"): none, prompt,
  *                    spotlight, classifier, output-filter, tool-permissions,
  *                    privilege-separation, soft, all-but-separation, everything
@@ -37,6 +41,7 @@ import type { LogEvent } from "../shared/types.js";
 import { ticketFacts } from "../server/attacks/facts.js";
 import { prepareAttack, type PreparedAttack } from "../server/attacks/insert.js";
 import { LibraryError, loadAttacks, loadBenign } from "../server/attacks/load.js";
+import type { Attack } from "../server/attacks/schema.js";
 import { STACKS, describeDefenses, stackSettings } from "../server/defenses/settings.js";
 import { Logger } from "../server/logger.js";
 import { ToolServerClient, type Confirmer } from "../server/mcp/client.js";
@@ -59,20 +64,21 @@ const reasoning = argv.includes("--reasoning");
 const verbose = argv.includes("--verbose");
 const confirmMode = flag("--confirm") ?? "decline";
 const stackName = flag("--stack") ?? "none";
+const runAll = argv.includes("--all");
 const defenses = stackSettings(stackName);
 if (!defenses) {
   console.error(`No stack "${stackName}". The stacks are: ${Object.keys(STACKS).join(", ")}`);
   process.exit(1);
 }
 
-if (!benignId && !attackId) {
+if (!benignId && !attackId && !runAll) {
   console.error("Usage: npm run attack -- <attack-id> | --benign B01  [--model NAME] [--reasoning] [--verbose] [--confirm ask|decline]");
   process.exit(1);
 }
 
 // --- What to run --------------------------------------------------------------------------
 
-let attacks;
+let attacks: Attack[];
 try {
   attacks = loadAttacks();
 } catch (error: unknown) {
@@ -87,7 +93,8 @@ if (attackId && !attack) {
   console.error(`No attack "${attackId}". The library has: ${attacks.map((a) => a.id).join(", ")}`);
   process.exit(1);
 }
-const benign = loadBenign().get(attack ? attack.baseTicket : (benignId ?? ""));
+const benignSuite = loadBenign();
+const benign = runAll ? benignSuite.get("B01") : benignSuite.get(attack ? attack.baseTicket : (benignId ?? ""));
 if (!benign) {
   console.error(`No benign ticket ${benignId}. They are B01 to B15.`);
   process.exit(1);
@@ -122,7 +129,36 @@ const askInTerminal: Confirmer = async ({ message }) => {
 
 // --- Run ----------------------------------------------------------------------------------------
 
+/** --all: every attack and benign ticket once, quietly, one line each. */
+async function smoke(): Promise<void> {
+  if (!defenses) return;
+  const tools = new ToolServerClient(() => {});
+  const quiet = new Logger(() => {});
+  const items = [...attacks.map((a) => ({ kind: "attack" as const, a })), ...[...benignSuite.values()].map((b) => ({ kind: "benign" as const, b }))];
+  const tally: Record<string, number> = {};
+  const started = Date.now();
+  console.log(`\nSmoke run: ${items.length} items · ${model} · stack "${stackName}"\n`);
+  for (const [i, item] of items.entries()) {
+    const base = item.kind === "attack" ? benignSuite.get(item.a.baseTicket) : item.b;
+    if (!base) continue;
+    const exp = [base.expect, ...(base.alternatives ?? [])];
+    const prep = item.kind === "attack" ? prepareAttack(item.a, await ticketFacts(tools, base)) : undefined;
+    const r = await runTicket({
+      ticketId: base.ticket, model, defenses, reasoning: false, overlays: prep?.overlays ?? [], seed: 1,
+      ...(prep?.chatMessage !== undefined ? { chatMessage: prep.chatMessage } : {}),
+      ...(prep && prep.followUps.length > 0 ? { followUps: prep.followUps } : {}),
+    }, { logger: quiet, emit: () => {}, tools });
+    const kind = item.kind === "attack" && prep ? scoreAttack(r, item.a.goal, exp, prep.vars).outcome.kind : scoreBenign(r, exp).outcome.kind;
+    tally[kind] = (tally[kind] ?? 0) + 1;
+    const name = item.kind === "attack" ? item.a.id : `${item.b.id} ${item.b.slug}`;
+    console.log(`${String(i + 1).padStart(2)}/${items.length}  ${kind.padEnd(16)} ${name}  (${(r.elapsedMs / 1000).toFixed(0)} s, ${r.requests} req${r.error ? `, error: ${r.error.slice(0, 80)}` : ""})`);
+  }
+  await tools.close();
+  console.log(`\n${Object.entries(tally).map(([k, n]) => `${k} ${n}`).join(" · ")} · ${((Date.now() - started) / 60000).toFixed(1)} min\n`);
+}
+
 async function main(): Promise<void> {
+  if (runAll) return smoke();
   // Checked at load; repeated here because narrowing does not cross into a function.
   if (!benign || !defenses) return;
   if (reasoning) {

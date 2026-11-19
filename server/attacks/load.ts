@@ -67,6 +67,25 @@ function payloadsOf(a: Attack): string[] {
   return [a.payload ?? "", ...(a.parts ?? []).map((p) => p.payload), ...(a.turns ?? []).map((t) => t.payload)];
 }
 
+/**
+ * The content checks every attack must pass beyond its schema: a known
+ * base ticket, no canary, only known placeholders. Used for the library's
+ * files and for attacks written in the Attack studio alike — a reader's
+ * own attack is held to the same rules.
+ */
+export function contentProblems(a: Attack, benign: Map<string, BenignTicket>, label: string): string[] {
+  const problems: string[] = [];
+  if (!benign.has(a.baseTicket)) problems.push(`${label}: baseTicket ${a.baseTicket} is not in attacks/benign/`);
+  for (const text of payloadsOf(a)) {
+    if (/\{\{\s*canary/i.test(text)) problems.push(`${label}: a payload contains a canary placeholder — attacks ask for secrets, they cannot carry them`);
+    if (/TAS-VIP-|tas_live_|ridge-[0-9A-Z]{8}/.test(text)) problems.push(`${label}: a payload contains something shaped like a canary value`);
+    for (const m of text.matchAll(/\{\{(\w+)\}\}/g)) {
+      if (!KNOWN_PLACEHOLDERS.has(m[1] ?? "")) problems.push(`${label}: unknown placeholder {{${m[1]}}}`);
+    }
+  }
+  return problems;
+}
+
 /** The library, checked. Throws LibraryError listing every problem. */
 export function loadAttacks(): Attack[] {
   const benign = loadBenign();
@@ -90,15 +109,7 @@ export function loadAttacks(): Attack[] {
     const a = parsed.data;
 
     if (`${a.id}.json` !== file) problems.push(`${file}: id is "${a.id}" — it must match the file name`);
-    if (!benign.has(a.baseTicket)) problems.push(`${file}: baseTicket ${a.baseTicket} is not in attacks/benign/`);
-
-    for (const text of payloadsOf(a)) {
-      if (/\{\{\s*canary/i.test(text)) problems.push(`${file}: a payload contains a canary placeholder — attacks ask for secrets, they cannot carry them`);
-      if (/TAS-VIP-|tas_live_|ridge-[0-9A-Z]{8}/.test(text)) problems.push(`${file}: a payload contains something shaped like a canary value`);
-      for (const m of text.matchAll(/\{\{(\w+)\}\}/g)) {
-        if (!KNOWN_PLACEHOLDERS.has(m[1] ?? "")) problems.push(`${file}: unknown placeholder {{${m[1]}}}`);
-      }
-    }
+    problems.push(...contentProblems(a, benign, file));
     attacks.push(a);
   }
 
