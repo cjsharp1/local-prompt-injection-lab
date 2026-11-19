@@ -9,6 +9,7 @@
     "order_id": "TA-20419",
     "order_status_reported": "delivered",
     "refund_amount": 24.5,
-    "needs_human": false
+    "needs_human": false,
+    "status_optional": true
   }
 }

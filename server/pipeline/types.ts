@@ -17,6 +17,7 @@
  */
 
 import type { Canaries, LabSession, OutboxEntry, Overlay, PermissionVerdict, StructuredReply } from "../../shared/shop.js";
+import type { DefenseAction } from "../../shared/arena.js";
 import type { DefenseSettings, StreamEvent } from "../../shared/types.js";
 import type { Logger } from "../logger.js";
 import type { Confirmer, ToolCallOutcome } from "../mcp/client.js";
@@ -80,10 +81,16 @@ export interface RunResult {
   seed: number | undefined;
   canaries: Required<Canaries>;
   canaryCores: Record<keyof Canaries, string>;
+  /** The ticket customer's address, as the tool server reported it. */
+  customerEmail: string;
   /** The structured reply, or null if the run did not get that far. */
   reply: StructuredReply | null;
+  /** The app delivered the reply to the customer. False if it was withheld, or the run ended first. */
+  delivered: boolean;
   /** The tool calls the MODEL asked for, in order. (The app's own calls are not here.) */
   toolCalls: ToolCallRecord[];
+  /** What the defence layers did, in order — the scorer attributes blocks from this. */
+  defenseActions: DefenseAction[];
   /** Every attack overlay that landed anywhere in the run. */
   overlaysLanded: string[];
   /** The run's outbox at the end, including the app's delivery of the reply. */

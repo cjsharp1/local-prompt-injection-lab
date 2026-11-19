@@ -22,9 +22,8 @@
  *                    (a y/n prompt here in the terminal)
  *
  * Attacks by id and --stack arrive with the attack library and the
- * defences (build steps 7 and 8). At this step the result is compared
- * with the ticket's expected outcome directly; the scorer that decides
- * the real outcome arrives at step 6.
+ * defences (build steps 7 and 8). The outcome is decided by the same
+ * scorer the arena uses (server/scoring/), never by a model.
  */
 
 import "dotenv/config";
@@ -32,13 +31,14 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
-import type { StructuredReply } from "../shared/shop.js";
+import type { ExpectedReply } from "../shared/arena.js";
 import type { LogEvent } from "../shared/types.js";
 import { NO_DEFENSES } from "../server/defenses/settings.js";
 import { Logger } from "../server/logger.js";
 import { ToolServerClient, type Confirmer } from "../server/mcp/client.js";
 import { listModels, ollamaConfig } from "../server/model/ollama.js";
 import { runTicket } from "../server/pipeline/run.js";
+import { scoreBenign } from "../server/scoring/outcome.js";
 
 const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 
@@ -63,13 +63,7 @@ if (!benignId) {
 
 // --- The benign ticket's expectation -------------------------------------------------------
 
-interface Expectation {
-  order_id: string | null;
-  order_status_reported: string | null;
-  refund_amount: number | null;
-  needs_human: boolean;
-}
-interface Benign { id: string; title: string; ticket: string; expect: Expectation; alternatives?: Expectation[] }
+interface Benign { id: string; title: string; ticket: string; expect: ExpectedReply; alternatives?: ExpectedReply[] }
 
 const file = readdirSync(join(ROOT, "attacks", "benign")).find((f) => f.startsWith(`${benignId}-`));
 if (!file) {
@@ -137,31 +131,15 @@ async function main(): Promise<void> {
   console.log(`outbox          ${result.outbox.map((m) => `${m.messageId} → ${m.to} (via ${m.via})`).join("; ") || "empty"}`);
   console.log(`model requests  ${result.requests} · ${(result.elapsedMs / 1000).toFixed(1)} s · peak prompt ${result.peakPromptTokens} tokens`);
 
-  // A direct comparison with the expectation — replaced by the scorer at step 6.
-  if (result.reply) {
-    const outcomes = [benign.expect, ...(benign.alternatives ?? [])];
-    const matches = outcomes.some((x) => matchesExpectation(result.reply as StructuredReply, x));
-    const strangers = result.outbox.filter((m) => m.to !== result.outbox.find((d) => d.via === "app")?.to);
-    console.log(`\nexpected        ${outcomes.map(describe).join("  OR  ")}`);
-    console.log(`got             ${describe(result.reply)}`);
-    console.log(`matches         ${matches ? "yes" : "NO"}${strangers.length > 0 ? ` · but ${strangers.length} email(s) to someone other than the customer` : ""}\n`);
-  }
-}
-
-function tidyOrder(id: string | null): string | null {
-  const digits = id?.replace(/\D/g, "") ?? "";
-  return digits ? `TA-${digits}` : null;
-}
-
-function matchesExpectation(reply: StructuredReply, x: Expectation): boolean {
-  return tidyOrder(reply.order_id) === x.order_id &&
-    reply.order_status_reported === x.order_status_reported &&
-    reply.refund_amount === x.refund_amount &&
-    reply.needs_human === x.needs_human;
-}
-
-function describe(x: Expectation | StructuredReply): string {
-  return `order ${x.order_id ?? "none"} · ${x.order_status_reported ?? "no status"} · refund ${x.refund_amount ?? "none"} · needs_human ${x.needs_human}`;
+  const score = scoreBenign(result, [benign.expect, ...(benign.alternatives ?? [])]);
+  const o = score.outcome;
+  console.log(`
+outcome         ${o.kind}${o.kind === "falsely-blocked" ? ` by ${o.layer} (${o.stage} stage)` : ""}` +
+    `${o.kind === "error" ? `: ${o.message}` : ""}`);
+  for (const why of score.taskWhy) console.log(`                · ${why}`);
+  for (const note of score.notes.actionsMismatch) console.log(`note            ${note}`);
+  for (const note of score.notes.falseAlarms) console.log(`false alarm     ${note}`);
+  console.log("");
 }
 
 await main();

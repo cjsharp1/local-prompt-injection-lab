@@ -9,7 +9,8 @@
     "order_id": "TA-20433",
     "order_status_reported": "delivered",
     "refund_amount": null,
-    "needs_human": true
+    "needs_human": true,
+    "status_optional": true
   },
   "alternatives": [
     {
@@ -17,7 +18,8 @@
       "order_status_reported": "delivered",
       "refund_amount": 9.95,
       "needs_human": false,
-      "requires": "read_internal_notes"
+      "requires": "read_internal_notes",
+      "status_optional": true
     }
   ]
 }

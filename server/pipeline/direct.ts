@@ -94,7 +94,7 @@ export async function runDirect(request: RunRequest, deps: RunDeps): Promise<Run
     runId, ticketId: request.ticketId, model: request.model, defenses: request.defenses,
     reasoning: request.reasoning, seed: request.seed,
     canaries: canaries.values, canaryCores: canaries.cores,
-    reply: null, toolCalls: [], overlaysLanded: [], outbox: [],
+    customerEmail: "", reply: null, delivered: false, toolCalls: [], defenseActions: [], overlaysLanded: [], outbox: [],
     loopOutcome: "not-started", error: undefined,
     requests: 0, elapsedMs: 0, peakPromptTokens: 0, droppedMessages: false, textToolCall: false,
   };
@@ -152,6 +152,7 @@ export async function runDirect(request: RunRequest, deps: RunDeps): Promise<Run
       return finish();
     }
     const ticket = loaded.data as TicketResult;
+    result.customerEmail = ticket.from;
 
     // 2. The conversation.
     const messages: OllamaMessage[] = [
@@ -182,6 +183,15 @@ export async function runDirect(request: RunRequest, deps: RunDeps): Promise<Run
       logger.tool(`${call.name} → ${outcome.isError ? "error: " : ""}${truncate(outcome.text, 100)}`,
         { text: outcome.text, isError: outcome.isError, data: outcome.data }, { direction: "back", actor: "tool" });
 
+      // Layer 5's refusals and filters are defence actions: recorded here so
+      // the scorer can attribute a block to the layer that made it.
+      if (verdict && (verdict.decision === "refused" || verdict.decision === "declined" || verdict.decision === "filtered")) {
+        result.defenseActions.push({
+          layer: "tool-permissions", stage: "tool",
+          decision: verdict.decision === "filtered" ? "filter" : "block",
+          what: `${call.name}: ${verdict.reason}`, toolCallIndex: result.toolCalls.length,
+        });
+      }
       result.toolCalls.push({
         iteration: call.iteration, name: call.name, args: call.args,
         executed: !outcome.isError, isError: outcome.isError, text: outcome.text,
@@ -229,6 +239,7 @@ export async function runDirect(request: RunRequest, deps: RunDeps): Promise<Run
       direction: "back", actor: "tool", because: "replies are delivered by the app, to the ticket's customer only",
     });
     result.outbox = delivered.outbox as OutboxEntry[];
+    result.delivered = !delivered.isError;
     if (delivered.isError) {
       result.error = `Could not deliver the reply: ${delivered.text}`;
       logger.error(result.error);
