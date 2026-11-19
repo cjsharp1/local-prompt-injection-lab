@@ -105,6 +105,8 @@ export interface RunResult {
   error: string | undefined;
   requests: number;
   elapsedMs: number;
+  /** Generation speed of the run's last model response — the local stand-in for a cost column. */
+  tokensPerSecond: number | null;
   peakPromptTokens: number;
   droppedMessages: boolean;
   textToolCall: boolean;

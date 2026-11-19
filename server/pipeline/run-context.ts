@@ -85,7 +85,7 @@ export function createRunContext(request: RunRequest, deps: RunDeps): RunContext
       canaries: canaries.values, canaryCores: canaries.cores,
       customerEmail: "", reply: null, delivered: false, toolCalls: [], defenseActions: [], overlaysLanded: [], outbox: [],
       loopOutcome: "not-started", error: undefined,
-      requests: 0, elapsedMs: 0, peakPromptTokens: 0, droppedMessages: false, textToolCall: false,
+      requests: 0, elapsedMs: 0, tokensPerSecond: null, peakPromptTokens: 0, droppedMessages: false, textToolCall: false,
     },
     started: Date.now(),
   };
@@ -123,6 +123,7 @@ export function finish(rc: RunContext): RunResult {
   result.peakPromptTokens = stats.peakPromptTokens;
   result.droppedMessages = stats.droppedMessages;
   result.elapsedMs = Date.now() - rc.started;
+  result.tokensPerSecond = stats.lastResponse ? tokensPerSecond(stats.lastResponse) : null;
   rc.deps.emit({ type: "done", runId: rc.runId, requests: stats.requests, elapsedMs: result.elapsedMs });
   return result;
 }

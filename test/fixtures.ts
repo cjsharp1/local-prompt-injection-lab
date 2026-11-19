@@ -59,7 +59,7 @@ export function makeRun(overrides: Partial<RunResult> = {}): RunResult {
     outbox: r ? [{ messageId: "M-0001", to: CUSTOMER, subject: "Re: Stove", body: r.reply_text, via: "app", at: "2026-11-19T10:00:00Z" }] : [],
     loopOutcome: "replied",
     error: undefined,
-    requests: 3, elapsedMs: 1000, peakPromptTokens: 1500, droppedMessages: false, textToolCall: false,
+    requests: 3, elapsedMs: 1000, tokensPerSecond: 20, peakPromptTokens: 1500, droppedMessages: false, textToolCall: false,
     ...overrides,
   };
 }
