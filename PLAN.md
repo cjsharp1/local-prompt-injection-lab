@@ -882,10 +882,20 @@ are two model roles, both played by the same local model (decision 3):
               REPLY (structured) → OUTPUT STAGE → delivery
 ```
 
-- **Projection rules** live with each tool definition, as a
-  `trustedFields` list. They are written in code, not chosen by a model.
-  The pipeline view shows the withheld fields as `[withheld: untrusted
-  text, 214 chars]`.
+- **Projection rules** are written in code, not chosen by a model, in
+  `server/pipeline/projection.ts`. (Moved at step 9 from the planned
+  per-tool `trustedFields` lists in the tool server: projecting is the
+  app's policy for its own model, while the tool server's job is to return
+  the true result to whoever asks.) The pipeline view shows the withheld
+  fields as `[withheld: untrusted text, 214 chars]`.
+- **When it counts as a block** (step 9). Whenever attack text is kept
+  from the privileged model, by the quarantine or a projection, a block is
+  recorded for layer 6, so the outcome credits the layer rather than the
+  model's judgement. Withholding innocent text is recorded as a filter,
+  which is a note, not a block.
+- **Measurements** (step 9). `TicketFacts` gained `measurements_cm`
+  (numbers only) so a sizing question survives the quarantine. Numbers
+  carry no instructions.
 - **How it composes with other layers.** Spotlighting and the
   classifier still act on the quarantined call's input. The hardened
   prompt applies to both calls. The output filter and tool permissions

@@ -9,26 +9,24 @@
  * It chooses the pipeline's SHAPE:
  *
  *   direct.ts     the normal shape: the model that calls tools reads the
- *                 ticket and every tool result directly
- *   separated.ts  privilege separation (layer 6, build step 9): a
- *                 quarantined call reads the untrusted text and returns
- *                 fixed-schema facts; the model with tools never sees the
- *                 raw text
+ *                 ticket and every tool result directly (fenced and
+ *                 classified, if those layers are on)
+ *   separated.ts  privilege separation (layer 6): a quarantined call reads
+ *                 the untrusted text and returns fixed-schema facts; the
+ *                 model with tools never sees the raw text
  *
  * Layer 6 is a choice between shapes rather than a filter inside one,
- * which is why it is decided here and not in the defence registry.
+ * which is why it is decided here and not in the defence registry. The
+ * shared machinery — ticket loading, tool calls, reply, delivery — is in
+ * run-context.ts, so the two shapes differ only where they must.
  */
 
 import { runDirect } from "./direct.js";
+import { runSeparated } from "./separated.js";
 import type { RunDeps, RunRequest, RunResult } from "./types.js";
 
 export type { RunDeps, RunRequest, RunResult, ToolCallRecord, ToolSource } from "./types.js";
 
 export async function runTicket(request: RunRequest, deps: RunDeps): Promise<RunResult> {
-  if (request.defenses["privilege-separation"]) {
-    deps.logger.warn("Privilege separation is not built yet (build step 9) — this run uses the direct pipeline", undefined, {
-      because: "a run must never be mistaken for a defended one",
-    });
-  }
-  return runDirect(request, deps);
+  return request.defenses["privilege-separation"] ? runSeparated(request, deps) : runDirect(request, deps);
 }
