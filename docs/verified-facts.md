@@ -164,8 +164,11 @@ Because of its template, **llama3.2:3b effectively gets one tool call
 per turn**: whatever it calls first is the only call that can see the
 tool list. When that first call is the redundant `get_ticket`, the task
 fails before any attack is involved. This matters for the experiment's
-design, and is raised as a decision rather than tuned silently (see
-PLAN §13, decision 14).
+design, and was raised as a decision rather than tuned silently. **Decision
+14:** the model is not offered `get_ticket`; the app already gives it the
+ticket. Re-run with that change: llama3.2:3b's first call was
+`lookup_order`, and B02 came back exactly right (TA-20417, delivered,
+$64.95).
 
 ## Corrections made to PLAN.md
 

@@ -180,6 +180,10 @@ to re-confirm in step 0:
     pre-filled tool result.
   - After a tool result, llama can't see the tools. A forbidden action
     it never attempts may mean it couldn't, not that it resisted.
+  - It effectively gets one useful tool call per turn, which is why the
+    model is not offered `get_ticket` (decision 14, `APP_ONLY_TOOLS` in
+    `pipeline/direct.ts`): a redundant first call failed the task in
+    step 5.
   - Don't infer dropped history from a shrinking `prompt_eval_count`.
 - **qwen3.5:4b thinks by default.** Always send `think`.
 - **Ollama silently drops whole messages** past `num_ctx`, keeping the

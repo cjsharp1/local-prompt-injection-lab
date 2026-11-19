@@ -44,6 +44,19 @@ import { CONSOLE_INSTRUCTION, baseSystemPrompt } from "./prompts.js";
 import type { RunDeps, RunRequest, RunResult } from "./types.js";
 import { renderParts, trusted, untrusted, type MessagePart } from "./untrusted.js";
 
+/**
+ * Tools the APP uses but the model is not offered (decision 14).
+ *
+ * get_ticket: the app loads the ticket and puts it in the first message,
+ * so the model never needs it. Offering it anyway cost llama3.2:3b the
+ * whole task in step 5: it called get_ticket first, and its chat template
+ * then stopped showing it the tool definitions (they render only when the
+ * last message is a user message), so it never looked up the order and
+ * invented a refund. Least privilege, and the realistic console shape: the
+ * tool stays in the tool server, for the app.
+ */
+export const APP_ONLY_TOOLS: ReadonlySet<string> = new Set(["get_ticket"]);
+
 /** A short, sortable, unique run id: r-20261119-a1b2c3. */
 export function newRunId(now = new Date()): string {
   const day = now.toISOString().slice(0, 10).replace(/-/g, "");
@@ -147,7 +160,7 @@ export async function runDirect(request: RunRequest, deps: RunDeps): Promise<Run
     ];
 
     // 3. The tool loop.
-    const ollamaTools = (await tools.tools()).map(toOllamaTool);
+    const ollamaTools = (await tools.tools()).filter((t) => !APP_ONLY_TOOLS.has(t.name)).map(toOllamaTool);
     const handle = async (call: RequestedToolCall): Promise<ToolHandled> => {
       emit({ type: "tool_start", id: call.id, name: call.name, args: call.args, iteration: call.iteration });
       logger.tool(`call ${call.name}(${truncate(JSON.stringify(call.args), 100)})`, call.args, {

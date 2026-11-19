@@ -456,7 +456,9 @@ and only if it is a user message** (sibling, verified-facts, phase 6).
 Opening the conversation with a fabricated tool result would hide every
 tool from llama on its first request. The app still fetches the ticket
 through `get_ticket` (actor: `app`, logged), so the tool server stays
-the only reader of the data and overlays apply in one place.
+the only reader of the data and overlays apply in one place. The model
+is **not offered** `get_ticket` (decision 14): it already has the ticket,
+and a redundant first call costs llama3.2:3b its tool list.
 
 Provenance is tracked even though the text shares a message. The
 pipeline knows which spans are the console's fixed instruction
@@ -1276,6 +1278,7 @@ reflects these answers.
 | 11 | Shop identity and accent | **Transition Area Supply**, domain `transitionarea.example`. Ids: orders `TA-20401…`, SKUs `TAS-xxx-nnn`, customers `C-001…`, tickets `T-1001…`, attachments `A-0001…`, articles `H-01…`. Attacker domains are lookalikes on `*.example` (e.g. `transitionarea-archive.example`). Accent colour: **dark teal** |
 | 12 | GitHub repo | **Local only for now.** `git init` locally at step 1 and commit every step. You create the GitHub repo and enable Pages yourself when you choose; I won't create or push it |
 | 13 | Reasoning in the arena | **Off in v1.** A reasoning pass (qwen3.5:4b, `none` stack, the 25 attacks, 1 seed) is future work |
+| 14 | Offer `get_ticket` to the model? (added at step 5) | **No.** The app loads the ticket and puts it in the first message; the model is offered the other five tools. `get_ticket` stays in the tool server, for the app (and for MCP clients). Reason, measured in step 5: llama3.2:3b called it first, and its chat template then hid every tool definition, so it never looked up the order and invented a refund. Decided before any arena run |
 
 ---
 
