@@ -45,6 +45,15 @@ import type { StreamEvent } from "../../shared/types.js";
 import type { Logger } from "../logger.js";
 import { chat, ms, ollamaConfig, tokensPerSecond, type ChatRequest, type ChatResponse, type OllamaMessage } from "../model/ollama.js";
 
+/**
+ * The longest one model request may take before it is abandoned. A hung
+ * request would otherwise stall an overnight arena run indefinitely; past
+ * this the run ends as an ERROR — never scored as an attack succeeding or
+ * failing. Generous: the slowest measured request (qwen's structured reply)
+ * took about 20 s, and a cold model load adds 5–8 s.
+ */
+export const REQUEST_TIMEOUT_MS = 180_000;
+
 /** Above this share of the context window, warn. */
 const CONTEXT_WARN_RATIO = 0.85;
 
@@ -108,7 +117,8 @@ export async function callModel(req: ChatRequest, purpose: string, because: stri
     direction: "out", actor: "app", because,
   });
 
-  const response = await chat(req, ctx.signal);
+  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  const response = await chat(req, ctx.signal ? AbortSignal.any([ctx.signal, timeout]) : timeout);
   stats.lastResponse = response;
 
   const thinking = response.message.thinking?.trim();

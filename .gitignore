@@ -31,6 +31,10 @@ data/*.db-shm
 # then a rename. A crash between the two leaves the temp file behind.
 docs/*.tmp
 
+# Scratch results from `npm run arena -- --quick`: a check that the
+# arena works, never part of the published results.
+.arena/
+
 # Installed packages — restore with `npm install` instead
 node_modules/
 

@@ -25,6 +25,8 @@
  * layer acted, at which stage of the pipeline, and why.
  */
 
+import type { RunRecord } from "./arena.js";
+
 // ---------------------------------------------------------------------------
 // The defences' vocabulary
 // ---------------------------------------------------------------------------
@@ -176,8 +178,11 @@ export interface LogEvent {
  *   reasoning   the model's reasoning for one request, when Show reasoning is on
  *   tool_start  a tool call is about to be sent
  *   tool_end    its result came back
+ *   confirm     the tool server asks a person to confirm (layer 5): the
+ *               browser shows a dialog and answers through /api/confirm
  *   done        the run finished; the summary for the workspace
  *   error       the run failed, with a message a person can read
+ *   result      the scored record — the same shape the arena stores
  */
 export type StreamEvent =
   | { type: "log"; event: LogEvent }
@@ -185,4 +190,6 @@ export type StreamEvent =
   | { type: "tool_start"; id: string; name: string; args: Record<string, unknown>; iteration: number }
   | { type: "tool_end"; id: string; name: string; isError: boolean; elapsedMs: number }
   | { type: "done"; runId: string; requests: number; elapsedMs: number }
-  | { type: "error"; message: string };
+  | { type: "error"; message: string }
+  | { type: "confirm"; id: string; message: string }
+  | { type: "result"; record: RunRecord };

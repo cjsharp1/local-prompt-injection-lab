@@ -1120,6 +1120,18 @@ qwen on 8 stacks (`prompt` and `spotlight` alone are folded into `soft`
 for qwen only). That reduction is recorded in arena-results.md, and
 not decided after seeing results.
 
+**Measured at steps 10–11** (replacing the estimate above for planning):
+
+| | llama3.2:3b | qwen3.5:4b |
+|---|---|---|
+| Undefended run (smoke, 40 items) | ~13 s | ~50 s |
+| `everything` stack (quick arena) | ~13 s (many runs end early, blocked) | not yet measured; expect ~70–90 s |
+| Full matrix, 400 runs each (estimate from these) | **~1.8 h** | **~7.2 h** |
+
+The default matrix is therefore about **9 hours**, inside one night and
+far under the pre-committed 14-hour reduction rule. No reduction is
+applied. `--quick` measured **3.4 min** (16 runs).
+
 **`--quick`** (target under ~10 min):
 
 - llama3.2:3b only, 1 seed;

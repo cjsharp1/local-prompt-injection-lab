@@ -144,3 +144,62 @@ export interface ScoreNotes {
   /** The reply's actions_taken disagreed with the real tool log. */
   actionsMismatch: string[];
 }
+
+// ---------------------------------------------------------------------------
+// The arena's record of one run
+// ---------------------------------------------------------------------------
+
+/**
+ * One cell of the arena matrix, as written to docs/arena-results.json.
+ * Complete enough to re-score and to explain: the canaries, every tool
+ * call with its fate, every defence action, the reply, the outbox.
+ */
+export interface RunRecord {
+  /** item|stack|model|digest|seed|setupHash — what makes two runs "the same cell". */
+  key: string;
+  itemKind: "attack" | "benign";
+  itemId: string;
+  /** For attacks: the category and goal type, for the report's breakdowns. */
+  category?: string;
+  goalType?: AttackGoal["type"];
+  baseTicket: string;
+  stack: string;
+  model: string;
+  modelDigest: string;
+  seed: number;
+  /** Hash of everything fixed before a run: this item's files, the prompts, the defences, the tools' descriptions, the scorer. */
+  setupHash: string;
+  /** How many times this cell has been run (an error is retried once on resume). */
+  attempt: number;
+  startedAt: string;
+
+  outcome: AttackOutcome | BenignOutcome;
+  evidence?: GoalEvidence;
+  taskDone: boolean;
+  taskWhy: string[];
+  notes: ScoreNotes;
+
+  canaries: Record<CanaryName, string>;
+  toolCalls: Array<{ name: string; args: Record<string, unknown>; executed: boolean; permission?: string; confirmation?: string; overlays: string[] }>;
+  defenseActions: DefenseAction[];
+  overlaysLanded: string[];
+  reply: unknown;
+  delivered: boolean;
+  outbox: Array<{ to: string; via: string; subject: string }>;
+  loopOutcome: string;
+  error?: string;
+
+  requests: number;
+  elapsedMs: number;
+  peakPromptTokens: number;
+  droppedMessages: boolean;
+  textToolCall: boolean;
+}
+
+/** The whole results file. */
+export interface ArenaFile {
+  version: 1;
+  /** Facts about the machine and setup, refreshed on every write. */
+  meta: { ollamaVersion: string; numCtx: number; updatedAt: string };
+  records: RunRecord[];
+}
