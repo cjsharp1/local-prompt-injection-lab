@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local Prompt Injection Lab</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="styles.css">
+<!--
+  The lab's page. Left: the Attack studio, the ticket workspace and the
+  arena results, as tabs. Middle: the defence panel and the pipeline view.
+  Right: the activity log. Wired up by app.js (compiled in place from
+  app.ts). Everything dynamic is built with textContent — attack payloads
+  included — and nothing here or in the scripts uses innerHTML.
+-->
+</head>
+<body>
+
+<header class="top">
+  <h1>Local Prompt Injection Lab</h1>
+  <span class="tagline">Attacks, defences and what each costs — scored by code, on your machine. No API key; nothing leaves this machine.</span>
+  <span class="spacer"></span>
+  <label class="field-inline">Model <select id="model-select" aria-label="Model"></select></label>
+  <label class="field-inline" id="reasoning-label"><input type="checkbox" id="reasoning"> Show reasoning</label>
+  <button id="run" class="run-button" type="button">Run</button>
+</header>
+<div id="banner" role="status" hidden></div>
+
+<main>
+  <!-- LEFT: studio · workspace · results ------------------------------------>
+  <section class="pane" id="left-pane" aria-label="Attack studio, workspace and results">
+    <div class="pane-bar">
+      <button class="tab active" type="button" data-tab="studio">Attack studio</button>
+      <button class="tab" type="button" data-tab="workspace">Ticket workspace</button>
+      <button class="tab" type="button" data-tab="results">Results</button>
+    </div>
+
+    <div class="pane-body" id="tab-studio">
+      <div id="studio-picker"></div>
+      <div id="studio-about"></div>
+      <div class="section-title">
+        Where it lands
+        <label class="field-inline small"><input type="checkbox" id="reveal-toggle"> Reveal hidden content</label>
+      </div>
+      <div id="studio-landing"></div>
+      <details class="custom">
+        <summary>Write your own attack</summary>
+        <p class="muted">The library's JSON format (attacks/README.md). Checked by the same schema and rules as the library's files.</p>
+        <textarea id="custom-attack" spellcheck="false" rows="14"></textarea>
+        <div class="custom-buttons">
+          <button id="custom-load" class="bar-button" type="button">Start from the selected attack</button>
+          <button id="custom-use" class="bar-button" type="button">Use this attack</button>
+        </div>
+      </details>
+    </div>
+
+    <div class="pane-body" id="tab-workspace" hidden>
+      <div class="section-title">The ticket</div>
+      <div id="ticket-view"></div>
+      <div class="section-title">The assistant's reply</div>
+      <div id="result-view"></div>
+    </div>
+
+    <div class="pane-body" id="tab-results" hidden>
+      <div id="results-view"></div>
+    </div>
+  </section>
+
+  <!-- MIDDLE: defences · pipeline ------------------------------------------->
+  <section class="pane" id="middle-pane" aria-label="Defences and pipeline">
+    <div class="pane-bar"><span class="pane-title">Defences</span></div>
+    <div class="pane-body" id="defense-panel"></div>
+    <div class="pane-bar"><span class="pane-title">Pipeline</span><span class="muted small">click a card to find it in the log</span></div>
+    <div class="pane-body" id="pipeline"></div>
+  </section>
+
+  <!-- RIGHT: activity log ----------------------------------------------------->
+  <section class="pane" id="log-pane" aria-label="Activity log">
+    <div class="pane-bar">
+      <span class="pane-title">Activity log</span>
+      <span class="spacer"></span>
+      <button id="clear-log" class="bar-button" type="button">Clear</button>
+    </div>
+    <div id="log-scroll"><ol id="log-rows"></ol></div>
+  </section>
+</main>
+
+<dialog id="confirm-dialog" aria-labelledby="confirm-title">
+  <h2 id="confirm-title">The tool server asks a person</h2>
+  <p id="confirm-message"></p>
+  <p class="muted small">This request comes from the tool server, not the model — a model cannot answer it. Declining is what the arena's scripted person does.</p>
+  <div class="dialog-buttons">
+    <button id="confirm-decline" type="button">Decline</button>
+    <button id="confirm-allow" type="button">Allow</button>
+  </div>
+</dialog>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
