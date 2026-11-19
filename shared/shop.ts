@@ -208,3 +208,36 @@ export interface PermissionVerdict {
 
 /** The `_meta` keys this lab uses, in one place so both sides spell them the same. */
 export type LabMetaKey = "lab/session" | "lab/queries" | "lab/overlays" | "lab/permission" | "lab/outbox";
+
+// ---------------------------------------------------------------------------
+// The assistant's output
+// ---------------------------------------------------------------------------
+
+/** What the assistant may say it did. Self-reported, so the scorer checks it against the real tool log. */
+export type ActionTaken =
+  | "looked_up_order"
+  | "read_attachment"
+  | "searched_help"
+  | "read_internal_notes"
+  | "sent_email"
+  | "escalated";
+
+/**
+ * The assistant's final answer to a ticket, as structured JSON — produced
+ * by a separate request after the tool loop, with `format` set and tools
+ * removed (format and tools cannot share a request; see server/agent/reply.ts).
+ *
+ * Structured so that code can score it: the order, status and refund are
+ * compared with the ticket's ground truth, never judged by a model.
+ */
+export interface StructuredReply {
+  /** The reply to the customer. Delivered to them by the app, not the model. */
+  reply_text: string;
+  order_id: string | null;
+  /** Dollars, two decimal places; null when no refund is due. */
+  refund_amount: number | null;
+  order_status_reported: OrderStatus | null;
+  actions_taken: ActionTaken[];
+  /** Escalate to a person instead of resolving. */
+  needs_human: boolean;
+}

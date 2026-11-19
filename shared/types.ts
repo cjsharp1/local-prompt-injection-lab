@@ -7,11 +7,11 @@
  * and it compiles to nothing at all. Both halves import it, so they cannot
  * quietly disagree about what crosses the connection.
  *
- * DRAFT: written at build step 1 with the parts the plan has already
- * fixed: the log row, the defence vocabulary, the pipeline stages. The
- * stream events, the structured reply and the run outcome are added as the
- * steps that produce them land, and the file is finalised with the UI at
- * step 12.
+ * DRAFT until the UI lands (build step 12): the log row, the defence
+ * vocabulary, the pipeline stages and the stream events are here; the
+ * pipeline-view event and the run outcome are added by the steps that
+ * produce them. The assistant's structured reply lives in shared/shop.ts,
+ * beside the shop it talks about.
  *
  * ---------------------------------------------------------------------------
  * The promise this file serves
@@ -162,3 +162,27 @@ export interface LogEvent {
   /** Milliseconds since the epoch. */
   at: number;
 }
+
+// ---------------------------------------------------------------------------
+// Stream events: everything one run sends to whoever is watching
+// ---------------------------------------------------------------------------
+
+/**
+ * What the pipeline emits while a run happens. The UI receives these over
+ * Server-Sent Events; the terminal scripts print them; the arena counts
+ * them. The pipeline never knows which — it is handed an `emit` function.
+ *
+ *   log         one activity-log row (most of what happens)
+ *   reasoning   the model's reasoning for one request, when Show reasoning is on
+ *   tool_start  a tool call is about to be sent
+ *   tool_end    its result came back
+ *   done        the run finished; the summary for the workspace
+ *   error       the run failed, with a message a person can read
+ */
+export type StreamEvent =
+  | { type: "log"; event: LogEvent }
+  | { type: "reasoning"; request: number; text: string; seconds: number }
+  | { type: "tool_start"; id: string; name: string; args: Record<string, unknown>; iteration: number }
+  | { type: "tool_end"; id: string; name: string; isError: boolean; elapsedMs: number }
+  | { type: "done"; runId: string; requests: number; elapsedMs: number }
+  | { type: "error"; message: string };
