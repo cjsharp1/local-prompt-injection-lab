@@ -1,0 +1,69 @@
+# ---------------------------------------------------------------------------
+# Files that must never reach version control.
+#
+# This project holds NO API KEY — it never calls a hosted model, so there is
+# no secret to leak. The .env line is kept anyway: the habit is worth keeping,
+# and anyone who copies this file into a project that DOES hold a key should
+# find the protection already in place.
+#
+# A key committed to a repository is a leaked key even if you delete it in a
+# later commit, because the old commit still contains it.
+#
+# (The canary "secrets" this lab plants are generated fresh for every run and
+# guard nothing, so the results files that record them are safe to commit.)
+# ---------------------------------------------------------------------------
+
+# Local configuration — never commit these
+.env
+.env.local
+
+# The generated shop database. `npm run seed` rebuilds it, deterministically,
+# from scripts/seed.ts — so the generator is the source and the .db is output.
+# Committing it would mean every seed change produces an unreadable binary
+# diff, and the copy in git could drift from what the script makes.
+# data/schema.sql IS committed: it is the readable teaching copy.
+data/*.db
+data/*.db-journal
+data/*.db-wal
+data/*.db-shm
+
+# The arena writes results atomically: a temp file beside the real one,
+# then a rename. A crash between the two leaves the temp file behind.
+docs/*.tmp
+
+# Installed packages — restore with `npm install` instead
+node_modules/
+
+# Compiled output — regenerate with `npm run build`
+dist/
+*.tsbuildinfo
+
+# The browser half compiles in place, so its output sits in public/ next to
+# the source. Generated, not written by hand — regenerate with
+# `npm run build:client`.
+public/**/*.js
+public/**/*.js.map
+
+# shared/ holds types only, so it compiles to an empty module — but the
+# client build still emits one next to the source, same as public/.
+shared/*.js
+shared/*.js.map
+
+# Claude Code
+#
+# CLAUDE.md IS committed — it is project guidance and belongs in the repo.
+# These are the per-developer bits that should not be:
+#   settings.local.json  one person's approved-tool choices
+#   .claude/*            local session state, scratch files, logs
+.claude/
+.claude/settings.local.json
+
+# Editor and OS clutter
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

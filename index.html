@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Local Prompt Injection Lab</title>
+<meta name="description" content="A local teaching lab for prompt injection: a small support assistant running through Ollama, a library of attacks, switchable defences, and code-scored results. No API key, no hosted model.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: a single reading column. Spec-sheet register — the subject is
+     an instrument panel over an attack bench, so the page borrows that
+     vocabulary: hairline rules, monospace labels, data in aligned rows
+     rather than cards. Dark teal is this project's accent. The one editorial note is the Newsreader display
+     face against Plex Mono.
+
+     Self-contained on purpose: inline CSS, no scripts, one font request.
+     Light and dark themes come from the same tokens, so a change to a
+     colour is a change in one place. */
+  :root {
+    --bg: #fbfaf8;
+    --surface: #ffffff;
+    --surface-sunk: #f4f2ee;
+    --fg: #1a1815;
+    --fg-dim: #6a635a;
+    --fg-faint: #938b80;
+    --rule: #e0dbd2;
+    --rule-strong: #c8c1b6;
+    --accent: #1d6a6a;
+    --accent-soft: #ddeeec;
+    --good: #4a6b48;
+    --warn: #8a6410;
+
+    --font-display: "Newsreader", Georgia, "Times New Roman", serif;
+    --font-body: "IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16150f;
+      --surface: #1e1c17;
+      --surface-sunk: #26231d;
+      --fg: #ece8e0;
+      --fg-dim: #9d958a;
+      --fg-faint: #7a7368;
+      --rule: #35312a;
+      --rule-strong: #4a453c;
+      --accent: #6fc2bd;
+      --accent-soft: #172a2a;
+      --good: #8fb58c;
+      --warn: #d9b45f;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16150f;
+    --surface: #1e1c17;
+    --surface-sunk: #26231d;
+    --fg: #ece8e0;
+    --fg-dim: #9d958a;
+    --fg-faint: #7a7368;
+    --rule: #35312a;
+    --rule-strong: #4a453c;
+    --accent: #6fc2bd;
+    --accent-soft: #172a2a;
+    --good: #8fb58c;
+    --warn: #d9b45f;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.65;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 52rem;
+    margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 0 6rem;
+  }
+
+  /* ---- Masthead ---- */
+  header.top {
+    padding-block: 3.5rem 2rem;
+    border-bottom: 2px solid var(--fg);
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 1rem;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(2.4rem, 7vw, 3.6rem);
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    margin: 0;
+    text-wrap: balance;
+  }
+  .standfirst {
+    font-family: var(--font-display);
+    font-size: clamp(1.05rem, 2.6vw, 1.3rem);
+    line-height: 1.5;
+    color: var(--fg-dim);
+    margin: 1rem 0 0;
+    max-width: 40ch;
+  }
+
+  /* ---- Fact strip ---- */
+  .facts {
+    display: grid;
+    /* Four fixed columns rather than auto-fit. The column COUNT has to be
+       known for the rules below to strip the divider and indent from
+       whichever cell begins each row — auto-fit decides that at render
+       time, and there is no "first in row" selector to match it with.
+       The breakpoints below step it down to 2, then 1. */
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .fact {
+    /* Padding on the LEFT, so the divider to the left of a cell has air
+       between it and the text. Padding on the right instead pushes the
+       text up against the divider it sits beside, which reads as the
+       label belonging to the column on its left. */
+    padding: 1.1rem;
+    /* The divider belongs to the cell it precedes, not the one it
+       follows — that way the strip never ends on a stray line, which
+       is what a right-hand border does when auto-fit reflows the row. */
+    border-left: 1px solid var(--rule);
+    min-width: 0;
+  }
+  /* Whichever cell starts a row loses its divider and its left padding,
+     so its text lines up with the page margin instead of being indented
+     past it. At four columns that is every 4th cell starting from the
+     first; the breakpoints below restate it for 2 columns and for 1. */
+  .fact:nth-child(4n + 1) {
+    padding-left: 0;
+    border-left: 0;
+  }
+  .fact dt {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+    margin: 0 0 0.3rem;
+  }
+  .fact dd {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .fact dd small {
+    display: block;
+    font-size: 0.78rem;
+    font-weight: 400;
+    color: var(--fg-dim);
+    letter-spacing: 0;
+  }
+
+  /* ---- Sections ---- */
+  section { padding-block: 2.75rem 0; }
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 1.75rem;
+    line-height: 1.2;
+    margin: 0 0 0.25rem;
+    letter-spacing: -0.01em;
+    text-wrap: balance;
+  }
+  .sec-note {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+    margin: 0 0 1.4rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  h3 {
+    font-family: var(--font-body);
+    font-size: 0.82rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+    margin: 2rem 0 0.75rem;
+  }
+  p { margin: 0 0 1rem; max-width: 64ch; }
+  p:last-child { margin-bottom: 0; }
+
+  a { color: var(--accent); }
+
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.86em;
+    background: var(--surface-sunk);
+    padding: 0.1em 0.35em;
+    border-radius: 2px;
+  }
+  strong { font-weight: 600; }
+  em { font-style: italic; }
+
+  /* ---- Tables ---- */
+  .t-scroll { overflow-x: auto; margin: 0 0 1rem; }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.9rem;
+  }
+  caption {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+    padding-bottom: 0.5rem;
+  }
+  th {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--fg-faint);
+    border-bottom: 1px solid var(--rule-strong);
+    padding: 0.5rem 0.9rem 0.5rem 0;
+    white-space: nowrap;
+  }
+  td {
+    border-bottom: 1px solid var(--rule);
+    padding: 0.65rem 0.9rem 0.65rem 0;
+    vertical-align: top;
+  }
+  th:last-child, td:last-child { padding-right: 0; }
+  td.mono, .num {
+    font-family: var(--font-mono);
+    font-size: 0.84rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  td.name { font-weight: 600; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+
+  /* ---- Phase list ---- */
+  ol.phases {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: ph;
+    border-top: 1px solid var(--rule);
+  }
+  ol.phases li {
+    counter-increment: ph;
+    display: grid;
+    grid-template-columns: 2.6rem 1fr auto;
+    gap: 0 1rem;
+    align-items: baseline;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  ol.phases li::before {
+    content: counter(ph, decimal-leading-zero);
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--accent);
+  }
+  ol.phases .ph-name { font-weight: 500; min-width: 0; }
+  ol.phases .ph-steps {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--fg-faint);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  /* A phase already finished. The marker carries the state, so the row
+     does not need a second treatment to say the same thing twice. */
+  ol.phases li.done .ph-steps { color: var(--good); }
+
+  /* ---- Callout ---- */
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--accent-soft);
+    padding: 0.9rem 1.1rem;
+    margin: 1.25rem 0;
+    font-size: 0.92rem;
+  }
+  .note p { max-width: none; }
+  .note .note-label {
+    font-family: var(--font-mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: block;
+    margin-bottom: 0.3rem;
+  }
+
+  /* ---- Gotcha list ---- */
+  ul.plain {
+    margin: 0 0 1rem;
+    padding-left: 1.1rem;
+    max-width: 64ch;
+  }
+  ul.plain li { margin-bottom: 0.5rem; }
+  ul.plain li::marker { color: var(--fg-faint); }
+
+  /* ---- Status row ---- */
+  .status {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1.25rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+  .status li {
+    font-family: var(--font-mono);
+    font-size: 0.74rem;
+    border: 1px solid var(--rule-strong);
+    padding: 0.3rem 0.6rem;
+    border-radius: 2px;
+    color: var(--fg-dim);
+  }
+  .status li.ok {
+    border-color: var(--good);
+    color: var(--good);
+  }
+  .status li.caution {
+    border-color: var(--warn);
+    color: var(--warn);
+  }
+
+  footer {
+    margin-top: 3rem;
+    padding-top: 1.25rem;
+    border-top: 2px solid var(--fg);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--fg-faint);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.5rem;
+  }
+
+  /* Two columns: four cells get cramped before the layout is narrow
+     enough to stack, so this is the intermediate step. Cells 1 and 3
+     now begin a row. */
+  @media (max-width: 700px) {
+    .facts { grid-template-columns: repeat(2, 1fr); }
+    .fact {
+      padding-left: 1.1rem;
+      border-left: 1px solid var(--rule);
+    }
+    .fact:nth-child(2n + 1) {
+      padding-left: 0;
+      border-left: 0;
+    }
+    /* The second row needs a rule above it, now that cells sit below
+       each other rather than only beside each other. */
+    .fact:nth-child(n + 3) { border-top: 1px solid var(--rule); }
+  }
+
+  @media (max-width: 480px) {
+    /* Stacked: every cell begins its own row, so none of them carry a
+       divider or an indent. The separator becomes a rule between rows. */
+    .facts { grid-template-columns: 1fr; }
+    .fact {
+      padding-left: 0;
+      border-left: 0;
+      border-top: 0;
+      border-bottom: 1px solid var(--rule);
+    }
+    .fact:last-child { border-bottom: 0; }
+    ol.phases li { grid-template-columns: 2.2rem 1fr; }
+    ol.phases .ph-steps { grid-column: 2; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <p class="eyebrow">Project overview · runs locally · no API key · under construction</p>
+    <h1>Local Prompt Injection Lab</h1>
+    <p class="standfirst">A small support assistant on your own machine, a library of attacks aimed at it, and switchable defences — scored by code, so you can see what each defence stops and what it costs.</p>
+  </header>
+
+  <section>
+    <h2>What it is</h2>
+    <p class="sec-note">The premise</p>
+    <p>Prompt injection is usually taught as anecdotes. This lab replaces them with a table measured on your own machine. A small open model runs locally through <strong>Ollama</strong> as the support assistant for <strong>Transition Area Supply</strong>, an invented outdoor gear shop. It reads customer tickets, looks orders up through tools, and writes a structured reply.</p>
+    <p>A static library of attacks is planted in those tickets, their attachments and the tools' results. Defences stand in the way, each switchable and labelled <em>soft</em>, <em>medium</em> or <em>hard</em>. Code — never a model — scores every run, and every result is reported as a pair: how often attacks succeeded, and how often legitimate tickets were still handled.</p>
+    <p>The point is to see behind the scenes: where the payload landed, exactly what the model was sent, what it reasoned, which tool it reached for, which defence inspected what, and why the attack got through or was stopped.</p>
+
+    <div class="note">
+      <span class="note-label">Status</span>
+      <p>The plan is approved and the build has started. Nothing on this page is a measured result yet; the figures — attack success, benign success, run times — will be filled in from the lab's own generated results once they exist, and not before.</p>
+    </div>
+  </section>
+
+  <footer>
+    <span>local-prompt-injection-lab v0.1.0</span>
+    <span>Node 24+ · TypeScript 7 · Express 5 · MCP 2.4 · Ollama</span>
+    <span>Local only · no API key</span>
+  </footer>
+
+</div>
+</body>
+</html>
