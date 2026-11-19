@@ -32,6 +32,10 @@ export interface RunRequest {
   reasoning: boolean;
   /** The attack's text, as overlays the tool server applies. Empty for a benign run. */
   overlays: Overlay[];
+  /** A "direct" attack: what the customer types into the live chat beside the ticket. */
+  chatMessage?: string;
+  /** A multi-turn attack: the customer's later messages, one turn each. */
+  followUps?: string[];
   /** Fixed seed for reproducible runs (the arena); default temperature. */
   seed?: number;
   temperature?: number;

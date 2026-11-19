@@ -68,7 +68,7 @@ export function newRunId(now = new Date()): string {
  * the ticket header (built from the tool server's own records) are
  * trusted; the subject, body and attachment list are the customer's.
  */
-export function ticketMessageParts(ticket: TicketResult): MessagePart[] {
+export function ticketMessageParts(ticket: TicketResult, chatMessage?: string): MessagePart[] {
   const attachments = ticket.attachments.length === 0
     ? "none"
     : ticket.attachments.map((a) => `${a.attachmentId} ${a.filename} (${a.mediaType}, ${a.size} bytes)`).join("; ");
@@ -79,6 +79,9 @@ export function ticketMessageParts(ticket: TicketResult): MessagePart[] {
     untrusted("ticket.body", ticket.body),
     trusted("\n\nAttachments: "),
     untrusted("ticket.attachments", attachments),
+    // The "direct" channel: the customer typing to the assistant in a live
+    // chat beside the ticket. Untrusted for the same reason the ticket is.
+    ...(chatMessage === undefined ? [] : [trusted("\n\nThe customer also wrote in the live chat: "), untrusted("user_turn", chatMessage)]),
   ];
 }
 
@@ -154,13 +157,13 @@ export async function runDirect(request: RunRequest, deps: RunDeps): Promise<Run
     const ticket = loaded.data as TicketResult;
     result.customerEmail = ticket.from;
 
-    // 2. The conversation.
+    // 2. The conversation: the system prompt, then the console's
+    // instruction, the ticket, and any live-chat message from the customer.
     const messages: OllamaMessage[] = [
       { role: "system", content: baseSystemPrompt(canaries.values.discountCode) },
-      { role: "user", content: renderParts(ticketMessageParts(ticket)) },
+      { role: "user", content: renderParts(ticketMessageParts(ticket, request.chatMessage)) },
     ];
 
-    // 3. The tool loop.
     const ollamaTools = (await tools.tools()).filter((t) => !APP_ONLY_TOOLS.has(t.name)).map(toOllamaTool);
     const handle = async (call: RequestedToolCall): Promise<ToolHandled> => {
       emit({ type: "tool_start", id: call.id, name: call.name, args: call.args, iteration: call.iteration });
@@ -202,47 +205,69 @@ export async function runDirect(request: RunRequest, deps: RunDeps): Promise<Run
       return { kind: "result", content: outcome.text };
     };
 
-    const loop = await runToolLoop({
-      model: request.model, messages, tools: ollamaTools, think: request.reasoning,
+    const sampling = {
       ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
       ...(request.seed !== undefined ? { seed: request.seed } : {}),
-    }, handle, ctx);
-    result.loopOutcome = loop.outcome;
-    result.textToolCall = loop.textToolCall;
+    };
 
-    if (loop.outcome !== "replied") {
-      logger.warn(`The tool loop ended without a reply (${loop.outcome}${loop.stopReason ? `: ${loop.stopReason}` : ""})`);
-      emit({ type: "done", runId, requests: stats.requests, elapsedMs: Date.now() - started });
-      return finish();
-    }
+    // One pass per turn: the opening message, then each follow-up a
+    // multi-turn attack scripts as the customer's next reply. Each turn
+    // runs the tool loop, the structured reply and the delivery; the run's
+    // result is the LAST turn's reply, and everything sent along the way.
+    const followUps = request.followUps ?? [];
+    for (let turn = 0; turn <= followUps.length; turn++) {
+      if (turn > 0) {
+        const message = followUps[turn - 1] ?? "";
+        logger.info(`The customer replied (turn ${turn + 1} of ${followUps.length + 1})`, { message }, {
+          actor: "attacker", because: "a multi-turn attack scripts the conversation",
+        });
+        messages.push({
+          role: "user",
+          content: renderParts([trusted("The customer replied in the live chat: "), untrusted(`conversation:turn-${turn + 1}`, message)]),
+        });
+      }
 
-    // 4. The structured reply.
-    const reply = await requestReply(loop.messages, {
-      model: request.model, think: request.reasoning,
-      ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
-      ...(request.seed !== undefined ? { seed: request.seed } : {}),
-    }, ctx);
-    if (!reply.ok) {
-      result.error = `The structured reply did not parse after a retry: ${reply.error}`;
-      logger.error(result.error, { raw: reply.raw });
-      emit({ type: "error", message: result.error });
-      return finish();
-    }
-    result.reply = reply.reply;
-    logger.info(`Structured reply: order ${reply.reply.order_id ?? "none"} · status ${reply.reply.order_status_reported ?? "none"} · ` +
-      `refund ${reply.reply.refund_amount ?? "none"} · needs_human ${reply.reply.needs_human}`, reply.reply, { actor: "model" });
+      // 3. The tool loop.
+      const loop = await runToolLoop({ model: request.model, messages, tools: ollamaTools, think: request.reasoning, ...sampling }, handle, ctx);
+      result.loopOutcome = loop.outcome;
+      result.textToolCall = result.textToolCall || loop.textToolCall;
+      messages.splice(0, messages.length, ...loop.messages);
 
-    // 5. Delivery — the app's call, to the ticket's own customer.
-    const delivered = await tools.call("send_email",
-      { to: ticket.from, subject: `Re: ${ticket.subject}`.slice(0, 200), body: reply.reply.reply_text.slice(0, 4000) }, session("app"));
-    logger.tool(`app delivered the reply to ${ticket.from}`, { text: delivered.text, outbox: delivered.outbox }, {
-      direction: "back", actor: "tool", because: "replies are delivered by the app, to the ticket's customer only",
-    });
-    result.outbox = delivered.outbox as OutboxEntry[];
-    result.delivered = !delivered.isError;
-    if (delivered.isError) {
-      result.error = `Could not deliver the reply: ${delivered.text}`;
-      logger.error(result.error);
+      if (loop.outcome !== "replied") {
+        logger.warn(`The tool loop ended without a reply (${loop.outcome}${loop.stopReason ? `: ${loop.stopReason}` : ""})`);
+        emit({ type: "done", runId, requests: stats.requests, elapsedMs: Date.now() - started });
+        return finish();
+      }
+
+      // 4. The structured reply.
+      const reply = await requestReply(messages, { model: request.model, think: request.reasoning, ...sampling }, ctx);
+      if (!reply.ok) {
+        result.error = `The structured reply did not parse after a retry: ${reply.error}`;
+        logger.error(result.error, { raw: reply.raw });
+        emit({ type: "error", message: result.error });
+        return finish();
+      }
+      result.reply = reply.reply;
+      result.delivered = false;
+      logger.info(`Structured reply: order ${reply.reply.order_id ?? "none"} · status ${reply.reply.order_status_reported ?? "none"} · ` +
+        `refund ${reply.reply.refund_amount ?? "none"} · needs_human ${reply.reply.needs_human}`, reply.reply, { actor: "model" });
+
+      // The next turn sees the reply the customer saw, not the draft.
+      messages.push({ role: "assistant", content: reply.reply.reply_text });
+
+      // 5. Delivery — the app's call, to the ticket's own customer.
+      const delivered = await tools.call("send_email",
+        { to: ticket.from, subject: `Re: ${ticket.subject}`.slice(0, 200), body: reply.reply.reply_text.slice(0, 4000) }, session("app"));
+      logger.tool(`app delivered the reply to ${ticket.from}`, { text: delivered.text, outbox: delivered.outbox }, {
+        direction: "back", actor: "tool", because: "replies are delivered by the app, to the ticket's customer only",
+      });
+      result.outbox = delivered.outbox as OutboxEntry[];
+      result.delivered = !delivered.isError;
+      if (delivered.isError) {
+        result.error = `Could not deliver the reply: ${delivered.text}`;
+        logger.error(result.error);
+        return finish();
+      }
     }
 
     const last = stats.lastResponse;

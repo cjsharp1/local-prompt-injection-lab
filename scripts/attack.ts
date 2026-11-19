@@ -1,8 +1,9 @@
 /**
  * attack.ts — one ticket through the whole lab, in the terminal.
  *
- * Run it with:  npm run attack -- --benign B01
- *               npm run attack -- --benign B15 --model llama3.2:3b --verbose
+ * Run it with:  npm run attack -- direct-ignore-previous
+ *               npm run attack -- tool-order-fake-system --model llama3.2:3b --verbose
+ *               npm run attack -- --benign B01
  *               npm run attack -- --benign B15 --confirm ask
  *
  * The same pipeline the UI runs (`runTicket`), the real tool server over
@@ -13,7 +14,8 @@
  *
  * Flags:
  *
- *   --benign B01     run one benign ticket (attacks/benign/B01-*.json)
+ *   <attack-id>      run one attack from attacks/ (the file name, without .json)
+ *   --benign B01     or run one benign ticket (attacks/benign/B01-*.json)
  *   --model NAME     a local model (default: MODEL from .env)
  *   --reasoning      let the model reason first (only models that can)
  *   --verbose        print each row's full detail, not just its label
@@ -21,26 +23,23 @@
  *                    "decline" (the default, as the arena does) or "ask"
  *                    (a y/n prompt here in the terminal)
  *
- * Attacks by id and --stack arrive with the attack library and the
- * defences (build steps 7 and 8). The outcome is decided by the same
- * scorer the arena uses (server/scoring/), never by a model.
+ * --stack arrives with the defences (build step 8). The outcome is
+ * decided by the same scorer the arena uses (server/scoring/), never by a
+ * model — and the evidence it found is printed with it.
  */
 
 import "dotenv/config";
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
 import { createInterface } from "node:readline/promises";
-import { fileURLToPath } from "node:url";
-import type { ExpectedReply } from "../shared/arena.js";
 import type { LogEvent } from "../shared/types.js";
+import { ticketFacts } from "../server/attacks/facts.js";
+import { prepareAttack, type PreparedAttack } from "../server/attacks/insert.js";
+import { LibraryError, loadAttacks, loadBenign } from "../server/attacks/load.js";
 import { NO_DEFENSES } from "../server/defenses/settings.js";
 import { Logger } from "../server/logger.js";
 import { ToolServerClient, type Confirmer } from "../server/mcp/client.js";
 import { listModels, ollamaConfig } from "../server/model/ollama.js";
 import { runTicket } from "../server/pipeline/run.js";
-import { scoreBenign } from "../server/scoring/outcome.js";
-
-const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
+import { scoreAttack, scoreBenign } from "../server/scoring/outcome.js";
 
 // --- Flags ---------------------------------------------------------------------------
 
@@ -50,27 +49,41 @@ function flag(name: string): string | undefined {
   return i >= 0 ? argv[i + 1] : undefined;
 }
 const benignId = flag("--benign");
+/** The first argument that is not a flag or a flag's value. */
+const attackId = argv.find((a, i) => !a.startsWith("--") && !(i > 0 && ["--benign", "--model", "--confirm"].includes(argv[i - 1] ?? "")));
 const model = flag("--model") ?? ollamaConfig().model;
 const reasoning = argv.includes("--reasoning");
 const verbose = argv.includes("--verbose");
 const confirmMode = flag("--confirm") ?? "decline";
 
-if (!benignId) {
-  console.error("Usage: npm run attack -- --benign B01 [--model NAME] [--reasoning] [--verbose] [--confirm ask|decline]");
-  console.error("(Attacks by id arrive with the attack library, build step 7.)");
+if (!benignId && !attackId) {
+  console.error("Usage: npm run attack -- <attack-id> | --benign B01  [--model NAME] [--reasoning] [--verbose] [--confirm ask|decline]");
   process.exit(1);
 }
 
-// --- The benign ticket's expectation -------------------------------------------------------
+// --- What to run --------------------------------------------------------------------------
 
-interface Benign { id: string; title: string; ticket: string; expect: ExpectedReply; alternatives?: ExpectedReply[] }
-
-const file = readdirSync(join(ROOT, "attacks", "benign")).find((f) => f.startsWith(`${benignId}-`));
-if (!file) {
-  console.error(`No benign ticket ${benignId}. They are attacks/benign/B01-… to B15-….`);
+let attacks;
+try {
+  attacks = loadAttacks();
+} catch (error: unknown) {
+  if (error instanceof LibraryError) {
+    console.error(error.message);
+    process.exit(1);
+  }
+  throw error;
+}
+const attack = attackId ? attacks.find((a) => a.id === attackId) : undefined;
+if (attackId && !attack) {
+  console.error(`No attack "${attackId}". The library has: ${attacks.map((a) => a.id).join(", ")}`);
   process.exit(1);
 }
-const benign = JSON.parse(readFileSync(join(ROOT, "attacks", "benign", file), "utf8")) as Benign;
+const benign = loadBenign().get(attack ? attack.baseTicket : (benignId ?? ""));
+if (!benign) {
+  console.error(`No benign ticket ${benignId}. They are B01 to B15.`);
+  process.exit(1);
+}
+const expected = [benign.expect, ...(benign.alternatives ?? [])];
 
 // --- Printing rows -----------------------------------------------------------------------------
 
@@ -101,6 +114,8 @@ const askInTerminal: Confirmer = async ({ message }) => {
 // --- Run ----------------------------------------------------------------------------------------
 
 async function main(): Promise<void> {
+  // Checked at load; repeated here because narrowing does not cross into a function.
+  if (!benign) return;
   if (reasoning) {
     const found = (await listModels()).find((m) => m.name === model);
     if (!found?.supportsThinking) {
@@ -114,13 +129,23 @@ async function main(): Promise<void> {
   });
   const logger = new Logger(printRow);
 
-  console.log(`\n${benign.id} · ${benign.title} · ticket ${benign.ticket} · ${model}\n`);
+  let prepared: PreparedAttack | undefined;
+  if (attack) {
+    prepared = prepareAttack(attack, await ticketFacts(tools, benign));
+    console.log(`\n${attack.id} · ${attack.title}\n${attack.category} · goal ${JSON.stringify(attack.goal)} · rides on ${benign.id} (${benign.title}) · ${model}`);
+    console.log(`${attack.description}\n`);
+  } else {
+    console.log(`\n${benign.id} · ${benign.title} · ticket ${benign.ticket} · ${model}\n`);
+  }
+
   const result = await runTicket({
     ticketId: benign.ticket,
     model,
     defenses: NO_DEFENSES,
     reasoning,
-    overlays: [],
+    overlays: prepared?.overlays ?? [],
+    ...(prepared?.chatMessage !== undefined ? { chatMessage: prepared.chatMessage } : {}),
+    ...(prepared && prepared.followUps.length > 0 ? { followUps: prepared.followUps } : {}),
     ...(confirmMode === "ask" ? { confirmer: askInTerminal } : {}),
   }, { logger, emit: () => {}, tools });
   await tools.close();
@@ -131,7 +156,22 @@ async function main(): Promise<void> {
   console.log(`outbox          ${result.outbox.map((m) => `${m.messageId} → ${m.to} (via ${m.via})`).join("; ") || "empty"}`);
   console.log(`model requests  ${result.requests} · ${(result.elapsedMs / 1000).toFixed(1)} s · peak prompt ${result.peakPromptTokens} tokens`);
 
-  const score = scoreBenign(result, [benign.expect, ...(benign.alternatives ?? [])]);
+  if (attack && prepared) {
+    const score = scoreAttack(result, attack.goal, expected, prepared.vars);
+    const o = score.outcome;
+    console.log(`\noutcome         ${o.kind}` +
+      (o.kind === "blocked" ? ` by ${o.layer} (${o.stage} stage, ${o.attempted ? "attempted" : "before any attempt"})` : "") +
+      (o.kind === "error" ? `: ${o.message}` : ""));
+    for (const where of score.evidence.where) console.log(`evidence        ${where}`);
+    if (o.kind === "failed-task") for (const why of o.why) console.log(`                · ${why}`);
+    console.log(`real task       ${score.taskDone ? "done" : "not done"}${score.taskDone ? "" : ` — ${score.taskWhy.join("; ")}`}`);
+    for (const note of score.notes.actionsMismatch) console.log(`note            ${note}`);
+    console.log(`attack landed   ${result.overlaysLanded.length > 0 || prepared.chatMessage !== undefined ? "yes" : "NO — the model never reached the channel it was planted in"}`);
+    console.log("");
+    return;
+  }
+
+  const score = scoreBenign(result, expected);
   const o = score.outcome;
   console.log(`
 outcome         ${o.kind}${o.kind === "falsely-blocked" ? ` by ${o.layer} (${o.stage} stage)` : ""}` +
