@@ -3,7 +3,7 @@
   // TypeScript configuration for Local Prompt Injection Lab — the Node side.
   //
   // This project has three parts, two of which compile from here:
-  //   server/       runs in Node    (the app: Express, the pipeline, the defences)
+  //   server/       runs in Node    (the app: Express, the pipeline, the defenses)
   //   tool-server/  runs in Node    (the MCP server, as its own process)
   //   public/       runs in a tab   (the UI — see tsconfig.client.json)
   // plus scripts/ and test/, which run in Node too.

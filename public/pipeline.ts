@@ -10,7 +10,7 @@
  *   lookup_order one tool call AND its result, as one card, with a badge
  *                when the tool server's permission check or the projection
  *                did something other than let it through
- *   Defence      only when a defence ACTS — flags, blocks, withholds,
+ *   Defense      only when a defense ACTS — flags, blocks, withholds,
  *                declines, refuses, filters, quarantines. A layer that
  *                checked and passed is in the activity log, not here.
  *   Reply        the structured reply, delivery or the holding message
@@ -49,7 +49,7 @@ let openTool: Card | undefined;
 let jump: (row: HTMLElement) => void = () => {};
 
 /**
- * Defence rows that record an action. Passing checks ("not flagged",
+ * Defense rows that record an action. Passing checks ("not flagged",
  * "nothing found", "allowed") are left to the log. Case matters for
  * FLAGGED: the classifier's pass row says "not flagged", and a
  * case-insensitive match once drew a card for every clean verdict.
@@ -108,7 +108,7 @@ function place(e: LogEvent, row: HTMLElement): void {
       return;
     }
     if (!acts(e.label)) return;
-    const layer = e.layer ?? "defence";
+    const layer = e.layer ?? "defense";
     const what = e.label.startsWith(`${layer}: `) ? e.label.slice(layer.length + 2) : e.label;
     if (/projected/.test(e.label) && openTool) {
       addRow(openTool, e, row);
@@ -121,13 +121,13 @@ function place(e: LogEvent, row: HTMLElement): void {
       addRow(openTool, e, row);
       openTool.sub.textContent = what;
       openTool.node.classList.remove("step-waiting");
-      openTool.node.classList.add("step-defence");
+      openTool.node.classList.add("step-defense");
       badge(openTool, `blocked · ${layer}`, "bad");
       openTool = undefined;
       return;
     }
     const stage: Stage = e.stage === "input" ? "input" : e.stage === "model" ? "model" : e.stage === "tool" ? "tool" : "output";
-    newCard(stage, layer, what, /projected/.test(e.label) ? "defence-info" : "defence", e, row);
+    newCard(stage, layer, what, /projected/.test(e.label) ? "defense-info" : "defense", e, row);
     return;
   }
 
@@ -193,7 +193,7 @@ function place(e: LogEvent, row: HTMLElement): void {
     return;
   }
   if (e.level === "warn" && e.label.startsWith("Run stopped")) {
-    newCard("output", "Run stopped", e.label.replace(/^Run stopped /, "").split(". The customer")[0] ?? "", "defence", e, row);
+    newCard("output", "Run stopped", e.label.replace(/^Run stopped /, "").split(". The customer")[0] ?? "", "defense", e, row);
     return;
   }
   if (e.level === "error") {

@@ -3,8 +3,8 @@
  *
  * Small and plain on purpose: the panels read and write these fields, and
  * app.ts decides when to redraw. Nothing here is persisted except the
- * defence settings' starting point, which is always ALL OFF (decision 9):
- * the lab opens on the undefended assistant, and the defence panel says so.
+ * defense settings' starting point, which is always ALL OFF (decision 9):
+ * the lab opens on the undefended assistant, and the defense panel says so.
  */
 
 import type { AttackInfo, BenignInfo, DefenseSettings, MetaResponse, RunRecord } from "./types.js";

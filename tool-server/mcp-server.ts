@@ -38,7 +38,7 @@
  * ---------------------------------------------------------------------------
  *
  * A tool asks for confirmation by returning `inputRequired(...)`; the
- * client fulfils it through its elicitation handler and retries the call
+ * client fulfills it through its elicitation handler and retries the call
  * with the answer attached. The pattern in the SDK's own documentation
  * reads the answer from `inputResponses` FIRST — and step 0 found that a
  * client can attach an "accepted" answer to the very first call, unasked,

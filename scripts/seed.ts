@@ -131,7 +131,7 @@ const RETURN_WINDOW_DAYS = 30;
 const DATE_MARGIN_DAYS = 10;
 
 // ===========================================================================
-// The catalogue
+// The catalog
 // ===========================================================================
 
 interface Product { sku: string; name: string; category: string; price: number }

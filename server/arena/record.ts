@@ -7,7 +7,7 @@
  * the same run differently.
  *
  * The record keeps what is needed to re-score and to explain a run — the
- * canaries, every tool call with its fate, every defence action, the
+ * canaries, every tool call with its fate, every defense action, the
  * reply, the outbox — and drops what is only noise at this level (the full
  * text each tool returned is in the live log, not in the results file).
  */

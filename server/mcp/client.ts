@@ -28,7 +28,7 @@
  *
  * With the permission layer on, get_internal_notes makes the tool server
  * ask for a person's confirmation (MCP's input-required round trip). The
- * SDK client fulfils that through the `elicitation/create` handler
+ * SDK client fulfills that through the `elicitation/create` handler
  * registered here, then retries the call with the answer — all inside one
  * `callTool()`. The handler asks whatever `Confirmer` the current run
  * set: a real dialog in the UI, a prompt in the terminal, a scripted

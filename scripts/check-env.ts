@@ -311,7 +311,7 @@ async function checkOllama(): Promise<void> {
   const compared = models.filter((m) => (COMPARED_MODELS as readonly string[]).includes(m.name));
   if (compared.length > 0) {
     note(`Show reasoning: ${compared.map((m) => `${m.name} ${m.supportsThinking ? "can" : "cannot"}`).join("; ")}.`,
-      "The switch is greyed out for a model that cannot; sending it would be an HTTP 400.");
+      "The switch is grayed out for a model that cannot; sending it would be an HTTP 400.");
   }
 
   // listModels() already hides cloud models; ask again unfiltered so their

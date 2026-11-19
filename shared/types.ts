@@ -3,11 +3,11 @@
  *
  * This file is the contract for the whole app. The server builds these
  * objects, sends them as JSON over Server-Sent Events, and the browser
- * parses them back out. Nothing here has any behaviour: it is types only,
+ * parses them back out. Nothing here has any behavior: it is types only,
  * and it compiles to nothing at all. Both halves import it, so they cannot
  * quietly disagree about what crosses the connection.
  *
- * DRAFT until the UI lands (build step 12): the log row, the defence
+ * DRAFT until the UI lands (build step 12): the log row, the defense
  * vocabulary, the pipeline stages and the stream events are here; the
  * pipeline-view event and the run outcome are added by the steps that
  * produce them. The assistant's structured reply lives in shared/shop.ts,
@@ -19,20 +19,20 @@
  *
  * The lab's rule is that if something happens and the UI does not show
  * it, that is a bug. Most of what happens — a model request, a tool call,
- * a defence inspecting an attack — reaches the browser as a LogEvent, so
+ * a defense inspecting an attack — reaches the browser as a LogEvent, so
  * the log row has to be able to say all of it: what kind of thing
- * happened, which way it travelled, whose decision it was, which defence
+ * happened, which way it traveled, whose decision it was, which defense
  * layer acted, at which stage of the pipeline, and why.
  */
 
 import type { RunRecord } from "./arena.js";
 
 // ---------------------------------------------------------------------------
-// The defences' vocabulary
+// The defenses' vocabulary
 // ---------------------------------------------------------------------------
 
 /**
- * Where in one turn a defence acts. A turn passes through these in order:
+ * Where in one turn a defense acts. A turn passes through these in order:
  *
  *   input   untrusted text arriving — the ticket, an attachment, a tool
  *           result — before the model sees it
@@ -44,12 +44,12 @@ import type { RunRecord } from "./arena.js";
 export type Stage = "input" | "model" | "tool" | "output";
 
 /**
- * How much a defence can be relied on — said on every badge, so no layer
+ * How much a defense can be relied on — said on every badge, so no layer
  * is mistaken for a guarantee.
  *
  *   soft    asks the model to behave; holds only as long as it does
  *   medium  enforced by code or by a second model, but matches only what
- *           it was written (or able) to recognise, so it can be bypassed
+ *           it was written (or able) to recognize, so it can be bypassed
  *   hard    holds whatever the model decides, within a stated scope:
  *           a permission in the tool server, or a model that never sees
  *           the attacker's text
@@ -67,7 +67,7 @@ export type DefenseId =
 
 /**
  * Which layers are on for a turn. Every layer defaults to OFF: the lab
- * starts from the undefended app, and the reader adds defences one at a
+ * starts from the undefended app, and the reader adds defenses one at a
  * time to watch what each one stops — and what it costs.
  */
 export type DefenseSettings = Record<DefenseId, boolean>;
@@ -86,7 +86,7 @@ export type DefenseSettings = Record<DefenseId, boolean>;
  *            per second and prompt tokens against the context window)
  *   tool     an MCP tool being called, and its result
  *   data     a SQL query the tool server ran, as reported in the result
- *   defense  a defence layer inspected something and decided: pass,
+ *   defense  a defense layer inspected something and decided: pass,
  *            transform or block. Logged even when it passes — "the
  *            classifier looked and saw nothing" is information
  *   warn     nothing failed, but you should know: a tool call written as
@@ -94,20 +94,20 @@ export type DefenseSettings = Record<DefenseId, boolean>;
  *   error    something failed. Never counted as an attack succeeding or
  *            failing, and always shown prominently
  *
- * `defense` is its own level, not a kind of `warn`, because a defence
+ * `defense` is its own level, not a kind of `warn`, because a defense
  * acting is the event a reader is watching for. Folded into `warn`, it
  * would sit among context-window notices and be easy to miss.
  */
 export type LogLevel = "info" | "model" | "tool" | "data" | "defense" | "warn" | "error";
 
 /**
- * Which way a logged event travelled, if it travelled at all.
+ * Which way a logged event traveled, if it traveled at all.
  *
  *   out   this app → the model. A request.
  *   in    the model → this app. A response.
  *   call  this app → a tool. A call into the tool server.
  *   back  a tool → this app. Its result.
- *   none  neither; an internal note — including every defence decision
+ *   none  neither; an internal note — including every defense decision
  *         made in this process
  *
  * The test: did data cross a boundary AT THE MOMENT this row was logged?
@@ -119,7 +119,7 @@ export type LogDirection = "out" | "in" | "call" | "back" | "none";
  *
  *   user      the person using the lab: running an attack, toggling a
  *             layer, answering a confirmation dialog
- *   app       this server's own code, including the defence layers
+ *   app       this server's own code, including the defense layers
  *   model     the local model, via something in its response
  *   tool      a tool in the tool server — including the permission layer,
  *             which lives there
@@ -129,10 +129,10 @@ export type LogActor = "user" | "app" | "model" | "tool" | "attacker";
 
 /** One line in the activity log. */
 export interface LogEvent {
-  /** Which kind of event this is. Decides the colour of the tag word. */
+  /** Which kind of event this is. Decides the color of the tag word. */
   level: LogLevel;
 
-  /** Which way it travelled. Absent means "none". Tints the row. */
+  /** Which way it traveled. Absent means "none". Tints the row. */
   direction?: LogDirection;
 
   /** Whose decision it was. */
@@ -155,7 +155,7 @@ export interface LogEvent {
 
   /**
    * The full data behind the event: a request body, a tool result, a
-   * defence's verdict. Rendered collapsed. `unknown`, not `any`, so the
+   * defense's verdict. Rendered collapsed. `unknown`, not `any`, so the
    * rendering code has to handle it defensively — it is often attacker
    * text, and it is always rendered with textContent.
    */

@@ -2,7 +2,7 @@
  * fixtures.ts — builds RunResult records for the scorer tests.
  *
  * The scorer decides every published number, so its tests build runs by
- * hand: exactly the tool calls, outbox, reply and defence actions a case
+ * hand: exactly the tool calls, outbox, reply and defense actions a case
  * needs, and nothing else. `makeRun()` returns a clean, completed benign
  * run on ticket T-1002 (customer sam.delacroix@example.net, order
  * TA-20417, refund $64.95); each test changes only what it is about.

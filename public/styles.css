@@ -1,13 +1,13 @@
 /* ---------------------------------------------------------------------------
    styles.css — the lab's page.
 
-   Colours are tokens on :root, redefined for dark mode. The --level-*
-   colours are the activity log's vocabulary: direction tints a row, level
-   colours one word. `defense` has its own colour, because a defence
+   Colors are tokens on :root, redefined for dark mode. The --level-*
+   colors are the activity log's vocabulary: direction tints a row, level
+   colors one word. `defense` has its own color, because a defense
    deciding is the event a reader is watching for; the attacker's rows get
    a marker of their own.
 
-   Strength badges (soft / medium / hard) use three fixed colours, so a
+   Strength badges (soft / medium / hard) use three fixed colors, so a
    reader learns them once: amber for soft, blue for medium, green for hard.
    --------------------------------------------------------------------------- */
 
@@ -215,7 +215,7 @@ main {
 }
 .pane-title { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--fg-dim); font-weight: 600; }
 .pane-body { overflow-y: auto; padding: 0.7rem 0.9rem; min-height: 0; }
-/* Left: the studio takes the room it needs, the defence panel the rest. */
+/* Left: the studio takes the room it needs, the defense panel the rest. */
 #studio-body { flex: 1 1 auto; }
 #defense-panel { flex: 0 1 auto; max-height: 50%; }
 /* Right: the pipeline strip keeps a capped height; the tab body below fills the rest. */
@@ -278,7 +278,7 @@ mark { color: var(--attacker); background: color-mix(in srgb, var(--attacker) 14
 .outbox ul { margin: 0.2rem 0; padding-left: 1.1rem; }
 .outbox li.via-model { color: var(--attacker); font-weight: 600; }
 
-/* ---- Defences ---------------------------------------------------------------- */
+/* ---- Defenses ---------------------------------------------------------------- */
 
 .stack-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; font-size: 0.8rem; }
 .undefended { margin: 0 0 0.4rem; padding: 0.3rem 0.5rem; border-radius: 4px; background: color-mix(in srgb, var(--bad) 10%, transparent); color: var(--bad); font-size: 0.8rem; font-weight: 600; }
@@ -341,8 +341,8 @@ mark { color: var(--attacker); background: color-mix(in srgb, var(--attacker) 14
 .step-output-held { border-top-color: var(--warn); }
 .step-attacker { border-top-color: var(--attacker); }
 .step-attacker .step-title { color: var(--attacker); }
-.step-defence { border-top-color: var(--level-defense); background: color-mix(in srgb, var(--level-defense) 12%, var(--surface)); }
-.step-defence-info { border-top-color: var(--level-defense); }
+.step-defense { border-top-color: var(--level-defense); background: color-mix(in srgb, var(--level-defense) 12%, var(--surface)); }
+.step-defense-info { border-top-color: var(--level-defense); }
 .step-error, .step.step-error { border-top-color: var(--level-error); }
 .step-error .step-sub { color: var(--level-error); }
 .step-waiting .step-sub { font-style: italic; }

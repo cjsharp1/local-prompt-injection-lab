@@ -6,7 +6,7 @@
  *   The picker      the library's attacks grouped by category, plus "no
  *                   attack" with a benign ticket to run instead. Each attack
  *                   shows its description, goal, base ticket and the
- *                   defences it is designed to get past.
+ *                   defenses it is designed to get past.
  *
  *   Where it lands  the exact text the chosen channel will contain — the
  *                   attacked ticket body, a planted attachment, the delivery

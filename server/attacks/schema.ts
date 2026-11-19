@@ -22,8 +22,8 @@
  *                   across several channels
  *   what it wants   goal: leak a named canary, make a forbidden tool call,
  *                   or corrupt a field of the reply (shared/arena.ts)
- *   whom it aims at targets: the defences it is DESIGNED to get past —
- *                   documentation for the defence files' headers, never
+ *   whom it aims at targets: the defenses it is DESIGNED to get past —
+ *                   documentation for the defense files' headers, never
  *                   used in scoring
  *
  * ---------------------------------------------------------------------------

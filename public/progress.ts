@@ -68,7 +68,7 @@ export function stepFromLog(e: LogEvent): void {
   } else if (e.level === "tool" && e.label.startsWith("app delivered")) {
     next = "Delivering the reply to the customer…";
   } else if (e.level === "warn" && e.label.startsWith("Run stopped")) {
-    next = "Stopped by a defence — sending the holding message…";
+    next = "Stopped by a defense — sending the holding message…";
   }
   if (next) setStep(next);
 }

@@ -24,7 +24,7 @@
  * made it. If it turns up in the output, this run's model put it there.
  *
  * Realistic in shape (decision 4), not "CANARY-…": a small model may treat
- * a string labelled CANARY as a test marker and behave differently, which
+ * a string labeled CANARY as a test marker and behave differently, which
  * would skew exactly what the lab measures.
  *
  * The alphabet is Crockford's base32 — digits and capitals without I, L, O

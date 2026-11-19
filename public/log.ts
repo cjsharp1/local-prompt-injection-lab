@@ -2,15 +2,15 @@
  * log.ts — the activity log: one row per event, in order, nothing hidden.
  *
  * Each row is label-first and readable without clicking: a level tag, a
- * direction arrow, the label, and for a defence's decision a chip naming
+ * direction arrow, the label, and for a defense's decision a chip naming
  * the layer and the pipeline stage. The full detail — a request body, a
  * tool result, a classifier's verdict, a reasoning trace — is one click
  * away in a collapsed tree (json-tree.ts).
  *
  * Two dimensions, kept apart on purpose (shared/types.ts):
  *
- *   level      what KIND of event: colours the tag word. `defense` has
- *              its own colour, because a defence acting is what a reader
+ *   level      what KIND of event: colors the tag word. `defense` has
+ *              its own color, because a defense acting is what a reader
  *              is watching for
  *   direction  which way data moved: draws the arrow and tints the row
  *

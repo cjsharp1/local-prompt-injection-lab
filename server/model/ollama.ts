@@ -203,7 +203,7 @@ export function ollamaConfig(): { url: string; model: string; numCtx: number } {
  * Ollama names cloud models with a ":cloud" suffix (some older tags used
  * "-cloud"). A `remote_*` field on a /api/tags entry is treated as remote
  * too — it could not be observed on this project's machine, which has
- * cloud disabled, so the check errs towards refusing.
+ * cloud disabled, so the check errs toward refusing.
  */
 export function isRemoteModel(name: string, entry?: Record<string, unknown>): boolean {
   if (/[:-]cloud$/i.test(name)) return true;

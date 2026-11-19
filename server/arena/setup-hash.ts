@@ -2,7 +2,7 @@
  * setup-hash.ts — a fingerprint of everything fixed before an arena run.
  *
  * The lab's rule: prompts, attacks, expectations and scorers are fixed
- * BEFORE a run and never tuned afterwards to make a result look better.
+ * BEFORE a run and never tuned afterward to make a result look better.
  * This file is how the rule is enforced rather than merely stated.
  *
  * Every arena record carries a hash of the files that decide what a run
@@ -10,7 +10,7 @@
  *
  *   shared     the prompts (base, hardened, spotlighting's note, the
  *              classifier's, the quarantined reader's, the reply
- *              instruction), every defence layer, the pipeline shapes and
+ *              instruction), every defense layer, the pipeline shapes and
  *              projection, the tool definitions (a tool's description is
  *              prompt text), the tool server's permission rules, and the
  *              scorer
@@ -22,7 +22,7 @@
  * old records as STALE instead of quietly mixing two different experiments
  * into one table.
  *
- * Line endings are normalised before hashing, so a Windows checkout and a
+ * Line endings are normalized before hashing, so a Windows checkout and a
  * Linux checkout of the same commit give the same hash.
  */
 

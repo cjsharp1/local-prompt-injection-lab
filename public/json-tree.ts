@@ -12,7 +12,7 @@
  * ---------------------------------------------------------------------------
  *
  * Every object and array becomes a <details> element. The browser then
- * supplies the toggling, the keyboard behaviour (Enter and Space on a
+ * supplies the toggling, the keyboard behavior (Enter and Space on a
  * focused summary), the correct announcement to a screen reader, and
  * the open/closed state — none of which has to be written or tested
  * here. A div with a click handler would need all four and would get
@@ -50,7 +50,7 @@ function isContainer(value: unknown): value is object {
 }
 
 /** A one-line description of what is inside a container, unopened. */
-function summarise(value: unknown): string {
+function summarize(value: unknown): string {
   if (Array.isArray(value)) {
     return value.length === 1 ? "1 item" : `${value.length} items`;
   }
@@ -184,7 +184,7 @@ function renderValue(
 
   const hint = document.createElement("span");
   hint.className = "jt-hint";
-  hint.textContent = summarise(value);
+  hint.textContent = summarize(value);
   summary.appendChild(hint);
 
   const close = document.createElement("span");

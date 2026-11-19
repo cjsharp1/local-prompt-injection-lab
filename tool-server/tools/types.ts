@@ -50,7 +50,7 @@
  * Unlike a tool built to save context, the text here carries the
  * untrusted content VERBATIM: the ticket body, the attachment, the
  * delivery note, the community answers. That content is the attack
- * surface the lab exists to show. Summarising it would be a defence in
+ * surface the lab exists to show. Summarizing it would be a defense in
  * itself — an unlabelled one — so it is not done. Each free-text field is
  * capped in length, and the cap is stated in the text.
  */

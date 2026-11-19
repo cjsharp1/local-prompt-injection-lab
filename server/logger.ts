@@ -2,7 +2,7 @@
  * logger.ts — builds activity-log rows and hands them to whoever is listening.
  *
  * Every component that does something worth seeing — the tool loop, the
- * MCP client, every defence layer — reports it through a `Logger`. The
+ * MCP client, every defense layer — reports it through a `Logger`. The
  * logger stamps each row with the time and the current iteration and
  * passes it to a SINK: a function that decides where rows go.
  *
@@ -15,7 +15,7 @@
  * The pipeline never knows which. It takes a Logger, never an HTTP
  * response, so it can be debugged from the terminal before any UI exists.
  *
- * Defence layers log through `defense()`, which requires the layer and
+ * Defense layers log through `defense()`, which requires the layer and
  * the stage: a row that says "something blocked this" without saying
  * which layer, at which point in the turn, would break the lab's promise
  * that every decision is visible and attributable.
@@ -79,7 +79,7 @@ export class Logger {
   }
 
   /**
-   * A defence layer inspected something and decided — pass, transform or
+   * A defense layer inspected something and decided — pass, transform or
    * block. Logged every time, including "pass": "the classifier looked and
    * found nothing" is information. Layer and stage are required.
    */

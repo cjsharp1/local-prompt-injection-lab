@@ -20,7 +20,7 @@
  * arrives intact over stdio and HTTP. See docs/verified-facts.md.
  *
  * ---------------------------------------------------------------------------
- * No session means the strictest behaviour, not the loosest
+ * No session means the strictest behavior, not the loosest
  * ---------------------------------------------------------------------------
  *
  * A client that sends no session — MCP Inspector, say — gets permission

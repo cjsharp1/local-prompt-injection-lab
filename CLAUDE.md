@@ -8,7 +8,7 @@ A teaching lab for prompt injection, fully local. A small support
 assistant for an invented outdoor gear shop reads customer tickets
 through six simulated MCP tools. A static library of attacks is
 inserted into those tickets, attachments and tool results, and six
-switchable defence layers stand in the way. Code scores every run and
+switchable defense layers stand in the way. Code scores every run and
 reports two numbers side by side: how often attacks succeed, and how
 often legitimate tickets still get handled. The models are small local
 models through Ollama. There is no API key, and nothing leaves the
@@ -39,7 +39,7 @@ explanation. For files in `server/defenses/`, it also checks that the
 header names every attack whose `targets` include that layer. It cannot
 judge quality; that part is on you.
 
-Every defence file's header says four things:
+Every defense file's header says four things:
 
 - what the layer does;
 - why it helps;
@@ -48,7 +48,7 @@ Every defence file's header says four things:
 
 Inline comments explain **why**, and especially the trap. When a
 comment records a bug that was hit, do not delete it because the code
-looks obvious; the comment is why it looks obvious. When behaviour
+looks obvious; the comment is why it looks obvious. When behavior
 changes, update the comment in the same edit.
 
 ## Commands
@@ -57,8 +57,8 @@ changes, update the comment in the same edit.
 |---|---|
 | `npm run dev` | App on 3300 (compiles the browser half first) |
 | `npm run typecheck` | **Both** halves |
-| `npm run audit-comments` | Every file has a header; defence headers name their attacks |
-| `npm test` | node:test: scorers, normalisation, attack schema, insertion |
+| `npm run audit-comments` | Every file has a header; defense headers name their attacks |
+| `npm test` | node:test: scorers, normalization, attack schema, insertion |
 | `npm run seed` | Rebuild `data/shop.db` (stop the app first on Windows) |
 | `npm run check-env` | Each dependency checked separately, with the fix |
 | `npm run try-model` | One raw request to the model, printed in full |
@@ -88,7 +88,7 @@ if a tool changed.
     `direct.ts` and `separated.ts` are the two pipeline shapes, and
     `run-context.ts` is everything they share (ticket loading, tool
     calls, the holding message, reply and delivery). `stages.ts` runs
-    the enabled defence layers at each stage and logs every decision.
+    the enabled defense layers at each stage and logs every decision.
     `quarantine.ts` and `projection.ts` belong to the separated shape.
   - `agent/loop.ts` is the tool loop. `agent/reply.ts` makes the
     structured-reply request.
@@ -130,18 +130,18 @@ That separation is what makes layer 5 hard.
 - **Scoring is code, never a model.** No LLM judges anything that
   reaches a results file.
 - **Prompts, attacks, expectations and scorers are fixed before a run
-  and never tuned afterwards** to improve a result. The arena's library
+  and never tuned afterward** to improve a result. The arena's library
   hash marks old records stale when any of them change. Do not work
   around it.
-- **Defences are switchable, labelled soft, medium or hard, and never
+- **Defenses are switchable, labeled soft, medium or hard, and never
   described as guarantees unless they are one.** Only layers 5 and 6
   are hard, and each states its scope limit.
-- **Every defence decision is logged**, including `pass`, at level
+- **Every defense decision is logged**, including `pass`, at level
   `defense`, naming the layer and the stage.
 - **Permissions are enforced in the tool server, not the prompt**, and
   never derived from model-written arguments.
 - **The output filter stays weaker than the scorer.** The filter is a
-  realistic substring check; the scorer normalises and decodes. The gap
+  realistic substring check; the scorer normalizes and decodes. The gap
   is how the lab shows a filter being bypassed. Do not "fix" the filter
   to match the scorer.
 - **`textContent`, never `innerHTML`**, for anything from a model, an
@@ -157,7 +157,7 @@ That separation is what makes layer 5 hard.
   send it explicitly, because leaving it out lets a thinking model
   think.
 - **The structured reply is a separate request.** `format` alongside
-  `tools` stops tool calling entirely. Do not "optimise" them into one
+  `tools` stops tool calling entirely. Do not "optimize" them into one
   request.
 - **In privilege-separation mode, the model that can call tools never
   receives raw untrusted text.** Tool results reach it only through
@@ -196,14 +196,14 @@ to re-confirm in step 0:
   system prompt. Watch the dropped-history flag, especially on tickets
   with attachments.
 - **Small models write tool calls as text.** It's detected by a
-  heuristic, labelled as one, and never executed.
+  heuristic, labeled as one, and never executed.
 - **The two models can't share a 4 GB GPU.** Every role (classifier,
   quarantine, main loop) uses the run's one model; a swap costs a
   6–10 s cold load.
 - `node:sqlite` does not bind `?1` positionally; use `:named` params.
 - `StdioClientTransport` is in `@modelcontextprotocol/client/stdio`.
 - **Confirmations use `inputRequired(...)`**, and the 2.4 client
-  fulfils and retries them inside `callTool()`.
+  fulfills and retries them inside `callTool()`.
   - The client's default era is **legacy**, so `mcp/client.ts` pins
     `versionNegotiation: { mode: "auto" }`. On legacy HTTP the server
     can't ask for input, and the tool fails closed.
@@ -240,7 +240,7 @@ are recorded in PLAN.md §8.4 and §5.2.
 Changing tools, layers, attacks, routes, scripts or counts means
 updating, in the same change:
 
-- `README.md`: tools, defences and their bypasses, scripts, layout;
+- `README.md`: tools, defenses and their bypasses, scripts, layout;
 - `index.html`: fact strip and tables (measure counts; do not
   estimate);
 - `PLAN.md` §4, §6.2 and §7.2;

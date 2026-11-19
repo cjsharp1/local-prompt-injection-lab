@@ -1,8 +1,8 @@
 /**
  * results.ts — the arena heatmap: attack success by category and stack, beside the benign cost.
  *
- * One table per model. Rows are the defence stacks; columns are the
- * attack categories, each cell coloured by how often attacks in that
+ * One table per model. Rows are the defense stacks; columns are the
+ * attack categories, each cell colored by how often attacks in that
  * category succeeded under that stack. The last column is the BENIGN
  * success rate — how often legitimate tickets were still handled — drawn
  * as a bar right beside the attack numbers, so a stack that "wins" by
@@ -21,7 +21,7 @@ import type { RunRecord } from "./types.js";
 
 const STACK_ORDER = ["none", "prompt", "spotlight", "classifier", "output-filter", "tool-permissions", "privilege-separation", "soft", "all-but-separation", "everything"];
 
-/** A red-to-green cell colour for an attack success share: high is bad. */
+/** A red-to-green cell color for an attack success share: high is bad. */
 function heat(share: number): string {
   return `color-mix(in srgb, var(--bad) ${Math.round(share * 85)}%, var(--surface))`;
 }

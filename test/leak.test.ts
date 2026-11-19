@@ -7,7 +7,7 @@
  * caught when it was only read, or when only part of it appears. A scorer
  * that called reading a leak would condemn every model that handled B15
  * correctly; one that missed a spaced-out code would flatter every
- * defence.
+ * defense.
  */
 
 import assert from "node:assert/strict";

@@ -2,11 +2,11 @@
  * app.ts — wires the page together. Nothing imports this file.
  *
  * On load: fetch the models, layers and stacks (/api/meta) and the attack
- * library (/api/library), draw the studio, the defence panel and the
+ * library (/api/library), draw the studio, the defense panel and the
  * pipeline view, and preview the default ticket.
  *
  * Run: POST /api/run with the selected attack (or benign ticket), the
- * defence switches, the model and the reasoning switch. While it runs, the
+ * defense switches, the model and the reasoning switch. While it runs, the
  * Run button becomes Stop and progress.ts shows the elapsed time and the
  * current step. Stop aborts the request; the server notices the closed
  * connection and stops asking the model. The response is a stream of
@@ -17,7 +17,7 @@
  *   result    → the Reply tab's reply, outbox and outcome badge
  *   error     → the banner
  *
- * The page has two columns: the setup (studio, defences) on the left and
+ * The page has two columns: the setup (studio, defenses) on the left and
  * the run (pipeline, then Activity log | Reply | Results tabs) on the
  * right. A run keeps the log tab showing, since that is where things
  * happen; when the result arrives the Reply tab gets a dot rather than

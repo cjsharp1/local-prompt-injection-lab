@@ -26,9 +26,9 @@
  * It is written first, before any other source file, so that no file
  * in the project ever exists unchecked.
  *
- * One check is specific to this lab: each defence layer's file in
+ * One check is specific to this lab: each defense layer's file in
  * server/defenses/ must NAME, in its header, every attack in attacks/
- * whose `targets` include that layer. A defence's documentation is
+ * whose `targets` include that layer. A defense's documentation is
  * supposed to point at its own failures; this keeps that true as attacks
  * are added.
  */
@@ -68,7 +68,7 @@ const AUDITED = ["server", "tool-server", "public", "scripts", "shared", "test"]
  */
 const MIN_HEADER_CHARS = 120;
 
-/** Defence layer files, by the layer id an attack's `targets` would use. */
+/** Defense layer files, by the layer id an attack's `targets` would use. */
 const DEFENSE_FILES: Record<string, string> = {
   "hardened-prompt": "server/defenses/hardened-prompt.ts",
   "spotlighting": "server/defenses/spotlighting.ts",
@@ -79,7 +79,7 @@ const DEFENSE_FILES: Record<string, string> = {
 };
 
 /**
- * Each defence file's header must name every attack aimed at it. Returns
+ * Each defense file's header must name every attack aimed at it. Returns
  * one message per missing name. An attack file that does not parse is
  * left to the attack loader to report.
  */
@@ -244,7 +244,7 @@ async function main(): Promise<void> {
 
   const gaps = defenseHeaderGaps();
   if (gaps.length > 0) {
-    console.log("Defence headers that do not name the attacks aimed at them:\n");
+    console.log("Defense headers that do not name the attacks aimed at them:\n");
     for (const gap of gaps) console.log(`  ${gap}`);
     console.log("");
     process.exitCode = 1;

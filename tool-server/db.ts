@@ -3,7 +3,7 @@
  *
  * This is the only file in the tool server that touches SQLite. Tools
  * never see the database handle; they get a `QueryRunner` (defined in
- * tools/types.ts) that can do two things — run a parameterised SELECT and
+ * tools/types.ts) that can do two things — run a parameterized SELECT and
  * return rows — and that writes down what it ran.
  *
  * ---------------------------------------------------------------------------

@@ -17,7 +17,7 @@
  *   HTML comments                     <!-- … -->
  *   elements hidden by inline style   display:none, visibility:hidden,
  *                                     font-size:0/1px, white or near-
- *                                     white colour (#fff, #ffffff, white)
+ *                                     white color (#fff, #ffffff, white)
  *   zero-width characters             U+200B–U+200D, U+2060, U+FEFF —
  *                                     shown as ⟨ZWSP⟩ and friends
  *   Markdown comments                 [//]: # (…)

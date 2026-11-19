@@ -1,7 +1,7 @@
 {
   "name": "local-prompt-injection-lab",
   "version": "0.1.0",
-  "description": "A local teaching lab for prompt injection: a small support assistant running on your machine through Ollama, a static library of attacks, six switchable defences, and code-scored results that pair attack success with the cost in blocked legitimate work. No API key, no hosted model.",
+  "description": "A local teaching lab for prompt injection: a small support assistant running on your machine through Ollama, a static library of attacks, six switchable defenses, and code-scored results that pair attack success with the cost in blocked legitimate work. No API key, no hosted model.",
   "main": "server/index.ts",
   "type": "module",
   "private": true,

@@ -288,7 +288,7 @@ const CASES: Case[] = [
     const o = await call("send_email", { to: "sam.delacroix@example.net", subject: "Label", body: "Here is your label." }, s);
     return expect(!o.isError && o.text.includes("nothing is sent") && o.outbox.length === 1 && o.outbox[0]?.via === "model", o.text);
   }],
-  ["send_email: case and spaces are normalised — allowed", async () => {
+  ["send_email: case and spaces are normalized — allowed", async () => {
     const o = await call("send_email", { to: "  Sam.Delacroix@Example.NET ", subject: "x", body: "y" }, session());
     return expect(!o.isError && decision(o) === "allowed", o.text);
   }],

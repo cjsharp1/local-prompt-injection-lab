@@ -5,7 +5,7 @@
  *               npm run try-model -- "your own question"
  *               npm run try-model -- --model llama3.2:3b "your question"
  *
- * No tools, no pipeline, no defences: one POST to Ollama's /api/chat,
+ * No tools, no pipeline, no defenses: one POST to Ollama's /api/chat,
  * built by the same `buildRequest()` every part of the lab uses, printed
  * in full on the way out and on the way back. It is the smallest possible
  * look at the thing every later step wraps.

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Local Prompt Injection Lab</title>
-<meta name="description" content="A local teaching lab for prompt injection: a small support assistant running through Ollama, a library of attacks, switchable defences, and code-scored results. No API key, no hosted model.">
+<meta name="description" content="A local teaching lab for prompt injection: a small support assistant running through Ollama, a library of attacks, switchable defenses, and code-scored results. No API key, no hosted model.">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
   /* Layout: a single reading column. Spec-sheet register — the subject is
@@ -15,7 +15,7 @@
 
      Self-contained on purpose: inline CSS, no scripts, one font request.
      Light and dark themes come from the same tokens, so a change to a
-     colour is a change in one place. */
+     color is a change in one place. */
   :root {
     --bg: #fbfaf8;
     --surface: #ffffff;
@@ -401,15 +401,15 @@
   <header class="top">
     <p class="eyebrow">Project overview · runs locally · no API key · under construction</p>
     <h1>Local Prompt Injection Lab</h1>
-    <p class="standfirst">A small support assistant on your own machine, a library of attacks aimed at it, and switchable defences — scored by code, so you can see what each defence stops and what it costs.</p>
+    <p class="standfirst">A small support assistant on your own machine, a library of attacks aimed at it, and switchable defenses — scored by code, so you can see what each defense stops and what it costs.</p>
   </header>
 
   <section>
     <h2>What it is</h2>
     <p class="sec-note">The premise</p>
     <p>Prompt injection is usually taught as anecdotes. This lab replaces them with a table measured on your own machine. A small open model runs locally through <strong>Ollama</strong> as the support assistant for <strong>Transition Area Supply</strong>, an invented outdoor gear shop. It reads customer tickets, looks orders up through tools, and writes a structured reply.</p>
-    <p>A static library of attacks is planted in those tickets, their attachments and the tools' results. Defences stand in the way, each switchable and labelled <em>soft</em>, <em>medium</em> or <em>hard</em>. Code — never a model — scores every run, and every result is reported as a pair: how often attacks succeeded, and how often legitimate tickets were still handled.</p>
-    <p>The point is to see behind the scenes: where the payload landed, exactly what the model was sent, what it reasoned, which tool it reached for, which defence inspected what, and why the attack got through or was stopped.</p>
+    <p>A static library of attacks is planted in those tickets, their attachments and the tools' results. Defenses stand in the way, each switchable and labeled <em>soft</em>, <em>medium</em> or <em>hard</em>. Code — never a model — scores every run, and every result is reported as a pair: how often attacks succeeded, and how often legitimate tickets were still handled.</p>
+    <p>The point is to see behind the scenes: where the payload landed, exactly what the model was sent, what it reasoned, which tool it reached for, which defense inspected what, and why the attack got through or was stopped.</p>
 
     <div class="note">
       <span class="note-label">Status</span>

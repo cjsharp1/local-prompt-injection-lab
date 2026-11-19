@@ -1,5 +1,5 @@
 /**
- * defenses.ts — the defence panel: one switch per layer, each labelled with its strength.
+ * defenses.ts — the defense panel: one switch per layer, each labeled with its strength.
  *
  * Five layers are toggles. Privilege separation is a MODE switch instead
  * — Direct or Separated — because it changes the shape of the pipeline

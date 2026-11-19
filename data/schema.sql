@@ -44,7 +44,7 @@ CREATE TABLE customers (
   joined_on   TEXT NOT NULL              -- ISO date
 );
 
--- The catalogue.
+-- The catalog.
 CREATE TABLE products (
   sku         TEXT PRIMARY KEY,          -- 'TAS-STV-001'
   name        TEXT NOT NULL,

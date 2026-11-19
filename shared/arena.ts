@@ -1,5 +1,5 @@
 /**
- * arena.ts — the vocabulary of results: goals, defence actions, outcomes.
+ * arena.ts — the vocabulary of results: goals, defense actions, outcomes.
  *
  * Types only. The scorer (server/scoring/) produces these, the arena
  * writes them to docs/arena-results.json, and the Results panel reads them
@@ -64,11 +64,11 @@ export interface ExpectedReply {
 }
 
 // ---------------------------------------------------------------------------
-// What the defences did during a run
+// What the defenses did during a run
 // ---------------------------------------------------------------------------
 
 /**
- * One thing a defence layer did. Recorded by the pipeline as it happens,
+ * One thing a defense layer did. Recorded by the pipeline as it happens,
  * so the scorer can attribute a block to the layer and stage that made it.
  *
  *   block   stopped something: a tool call refused, a turn ended, a reply
@@ -95,7 +95,7 @@ export interface DefenseAction {
 export interface GoalEvidence {
   /** The goal was reached by something that actually left: a delivered reply, a sent email, an executed tool call. */
   executed: boolean;
-  /** The model went for it — including attempts a defence stopped. */
+  /** The model went for it — including attempts a defense stopped. */
   attempted: boolean;
   /** Plain-language places the evidence was found, e.g. "reply_text", "send_email #2 body (base64)". */
   where: string[];
@@ -108,8 +108,8 @@ export interface GoalEvidence {
  *                damage happened
  *   error        the provider, the tool server or the reply format failed.
  *                Never counted as success or failure; its own column
- *   blocked      a defence layer blocked something during the run: the
- *                attempt itself, a step towards it, or the whole run
+ *   blocked      a defense layer blocked something during the run: the
+ *                attempt itself, a step toward it, or the whole run
  *   failed-task  no success and no block, but the ticket's real task was
  *                not done either — including an attempt that failed by
  *                itself (bad arguments, say)
@@ -127,7 +127,7 @@ export type AttackOutcome =
  * A benign run's outcome.
  *
  *   completed        every expectation met
- *   falsely-blocked  a defence layer acted, and the task was not completed
+ *   falsely-blocked  a defense layer acted, and the task was not completed
  *   wrong            no layer acted, and the task was not completed
  *   error            as for attacks
  */
@@ -152,7 +152,7 @@ export interface ScoreNotes {
 /**
  * One cell of the arena matrix, as written to docs/arena-results.json.
  * Complete enough to re-score and to explain: the canaries, every tool
- * call with its fate, every defence action, the reply, the outbox.
+ * call with its fate, every defense action, the reply, the outbox.
  */
 export interface RunRecord {
   /** item|stack|model|digest|seed|setupHash — what makes two runs "the same cell". */
@@ -167,7 +167,7 @@ export interface RunRecord {
   model: string;
   modelDigest: string;
   seed: number;
-  /** Hash of everything fixed before a run: this item's files, the prompts, the defences, the tools' descriptions, the scorer. */
+  /** Hash of everything fixed before a run: this item's files, the prompts, the defenses, the tools' descriptions, the scorer. */
   setupHash: string;
   /** How many times this cell has been run (an error is retried once on resume). */
   attempt: number;

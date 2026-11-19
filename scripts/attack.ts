@@ -20,7 +20,7 @@
  *                    line each — the library's smoke test. (The arena,
  *                    `npm run arena`, is the measured version: seeds,
  *                    stacks, models, a results file.)
- *   --stack NAME     a named defence stack (default "none"): none, prompt,
+ *   --stack NAME     a named defense stack (default "none"): none, prompt,
  *                    spotlight, classifier, output-filter, tool-permissions,
  *                    privilege-separation, soft, all-but-separation, everything
  *   --model NAME     a local model (default: MODEL from .env)

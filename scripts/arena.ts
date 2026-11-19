@@ -1,5 +1,5 @@
 /**
- * arena.ts — the whole matrix: attacks and benign tickets × defence stacks × models × seeds.
+ * arena.ts — the whole matrix: attacks and benign tickets × defense stacks × models × seeds.
  *
  * Run it with:  npm run arena                              (the default matrix)
  *               npm run arena -- --models llama3.2:3b      (one model — a night's half)
@@ -33,7 +33,7 @@
  * cell's key includes the setup hash (setup-hash.ts), so editing a prompt,
  * a tool description, an attack or a scoring rule makes earlier results
  * STALE rather than mixing two experiments — the rule that prompts and
- * checks are fixed before a run and never tuned afterwards, enforced.
+ * checks are fixed before a run and never tuned afterward, enforced.
  *
  * Seeds are fixed (1, 2, 3…) at the model's default temperature: a rerun
  * reproduces the same results, and different seeds show how much a model

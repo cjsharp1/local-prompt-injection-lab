@@ -7,12 +7,12 @@
  * Before asking how easily a model is fooled, ask how well it does the
  * work at all. This runs the 15 benign tickets through the real pipeline
  * — no attacks — for each model, three seeds each, twice: with no
- * defences, and with every defence on. It writes docs/model-eval.json
+ * defenses, and with every defense on. It writes docs/model-eval.json
  * and docs/model-eval.md.
  *
  * What it reports, per model:
  *
- *   task success        benign tickets completed, with no defences and with
+ *   task success        benign tickets completed, with no defenses and with
  *                       everything on — the second number is the cost of the
  *                       full stack in legitimate work
  *   per ticket          which tickets each model gets right, and how often
@@ -132,7 +132,7 @@ function report(file: EvalFile): string {
     }));
     lines.push(`| ${b.id} ${b.title}${b.awkward ? " ★" : ""} | ${cells.join(" | ")} |`);
   }
-  lines.push("", "★ awkward but legitimate: where over-eager defences cost work.", "");
+  lines.push("", "★ awkward but legitimate: where over-eager defenses cost work.", "");
 
   lines.push("## Every run that was not completed", "");
   for (const r of recs.filter((x) => x.outcome.kind !== "completed")) {
