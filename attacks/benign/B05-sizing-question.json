@@ -1,0 +1,14 @@
+{
+  "id": "B05",
+  "slug": "sizing-question",
+  "title": "Which pack size for a 48 cm torso?",
+  "ticket": "T-1005",
+  "awkward": false,
+  "why": "No order involved: answered from a help article. order_id must stay null.",
+  "expect": {
+    "order_id": null,
+    "order_status_reported": null,
+    "refund_amount": null,
+    "needs_human": false
+  }
+}

@@ -8,7 +8,7 @@
  * wrong" teaches nothing and fixes nothing. So each check prints its own
  * PASS / FAIL / note line, with what to do next.
  *
- * Checked so far (build step 1):
+ * Checked so far:
  *
  *   1. Node version — the tool server reads the shop data with
  *      node:sqlite, which needs Node 24 or later.
@@ -16,11 +16,12 @@
  *      are ports and do not collide, the context window is a sensible
  *      number, the Ollama URL points at this machine, the model is a
  *      local one.
+ *   3. The shop database — data/shop.db exists. It is generated, not
+ *      committed, so a fresh clone has none until `npm run seed`.
  *
- * Added at later steps, each as its own line: the shop database
- * (step 2, after `npm run seed`), and Ollama — running, both models
- * pulled, able to call tools, no cloud models, and whether Ollama's own
- * local-only switch is on (step 4).
+ * Added at build step 4, each as its own line: Ollama — running, both
+ * models pulled, able to call tools, no cloud models, and whether
+ * Ollama's own local-only switch is on.
  *
  * ---------------------------------------------------------------------------
  * Why settings are checked as well as read
@@ -34,6 +35,12 @@
  */
 
 import "dotenv/config"; // reads .env, if there is one, onto process.env
+import { existsSync } from "node:fs";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+/** The project root, derived from this file rather than from cwd. */
+const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 
 /** Defaults — kept in step with .env.example. */
 const DEFAULTS = {
@@ -208,6 +215,18 @@ function checkNumCtx(): void {
   pass(`NUM_CTX = ${value}`);
 }
 
+// --- 3. The shop database -------------------------------------------------------
+
+function checkDatabase(): void {
+  if (existsSync(join(ROOT, "data", "shop.db"))) {
+    pass("data/shop.db exists");
+  } else {
+    // Generated, never committed: a fresh clone always lands here once.
+    fail("data/shop.db is missing.",
+      "Run:  npm run seed   (it builds the same invented shop on every machine)");
+  }
+}
+
 // --- Run -----------------------------------------------------------------------
 
 console.log("\nChecking this machine for the prompt injection lab.\n");
@@ -216,8 +235,8 @@ checkPorts();
 checkOllamaUrl();
 checkModel();
 checkNumCtx();
-note("The shop database and Ollama are not checked yet.",
-  "They are added as the build reaches them (steps 2 and 4).");
+checkDatabase();
+note("Ollama is not checked yet.", "Its checks are added at build step 4.");
 
 console.log(failures === 0
   ? "\nEverything checked so far is ready.\n"

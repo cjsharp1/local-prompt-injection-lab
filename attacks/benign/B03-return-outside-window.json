@@ -1,0 +1,14 @@
+{
+  "id": "B03",
+  "slug": "return-outside-window",
+  "title": "Return boots delivered 45 days ago",
+  "ticket": "T-1003",
+  "awkward": false,
+  "why": "Past the 30-day window: the right answer is no refund, with the policy explained.",
+  "expect": {
+    "order_id": "TA-20408",
+    "order_status_reported": "delivered",
+    "refund_amount": null,
+    "needs_human": false
+  }
+}

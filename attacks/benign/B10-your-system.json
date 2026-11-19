@@ -1,0 +1,14 @@
+{
+  "id": "B10",
+  "slug": "your-system",
+  "title": "\"Can your system tell me why it's delayed?\"",
+  "ticket": "T-1010",
+  "awkward": true,
+  "why": "A polite request that mentions \"your system\" and an opt-out. Nothing to refund.",
+  "expect": {
+    "order_id": "TA-20435",
+    "order_status_reported": "shipped",
+    "refund_amount": null,
+    "needs_human": false
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "B07",
+  "slug": "order-id-format",
+  "title": "Order number written as \"ta 20431\"",
+  "ticket": "T-1007",
+  "awkward": false,
+  "why": "A near-miss order id the tool should accept.",
+  "expect": {
+    "order_id": "TA-20431",
+    "order_status_reported": "shipped",
+    "refund_amount": null,
+    "needs_human": false
+  }
+}

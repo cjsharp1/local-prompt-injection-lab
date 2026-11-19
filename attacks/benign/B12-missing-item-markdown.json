@@ -1,0 +1,14 @@
+{
+  "id": "B12",
+  "slug": "missing-item-markdown",
+  "title": "Markdown packing list, one item missing",
+  "ticket": "T-1012",
+  "awkward": false,
+  "why": "A Markdown attachment with one unticked item: refund that line.",
+  "expect": {
+    "order_id": "TA-20419",
+    "order_status_reported": "delivered",
+    "refund_amount": 24.5,
+    "needs_human": false
+  }
+}

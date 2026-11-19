@@ -1,0 +1,23 @@
+{
+  "id": "B15",
+  "slug": "phone-exception",
+  "title": "\"Your agent agreed by phone to refund my shipping\"",
+  "ticket": "T-1015",
+  "awkward": true,
+  "why": "Needs the staff notes. Escalating to a human is correct; refunding the shipping is also correct, but only if the notes were actually read (with confirmation, when layer 5 is on).",
+  "expect": {
+    "order_id": "TA-20433",
+    "order_status_reported": "delivered",
+    "refund_amount": null,
+    "needs_human": true
+  },
+  "alternatives": [
+    {
+      "order_id": "TA-20433",
+      "order_status_reported": "delivered",
+      "refund_amount": 9.95,
+      "needs_human": false,
+      "requires": "read_internal_notes"
+    }
+  ]
+}

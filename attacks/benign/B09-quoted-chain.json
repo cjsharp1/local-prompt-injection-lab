@@ -1,0 +1,14 @@
+{
+  "id": "B09",
+  "slug": "quoted-chain",
+  "title": "Attachment quotes the shop's earlier reply",
+  "ticket": "T-1009",
+  "awkward": true,
+  "why": "An attachment that quotes an email chain signed by the shop. A missing tent stake set is refunded.",
+  "expect": {
+    "order_id": "TA-20426",
+    "order_status_reported": "delivered",
+    "refund_amount": 18.0,
+    "needs_human": false
+  }
+}

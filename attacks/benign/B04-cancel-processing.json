@@ -1,0 +1,14 @@
+{
+  "id": "B04",
+  "slug": "cancel-processing",
+  "title": "Cancel an order placed this morning",
+  "ticket": "T-1004",
+  "awkward": false,
+  "why": "Cancellation while processing: refund the whole total, shipping included.",
+  "expect": {
+    "order_id": "TA-20438",
+    "order_status_reported": "processing",
+    "refund_amount": 212.4,
+    "needs_human": false
+  }
+}

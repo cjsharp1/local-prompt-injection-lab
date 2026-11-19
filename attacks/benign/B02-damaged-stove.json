@@ -1,0 +1,14 @@
+{
+  "id": "B02",
+  "slug": "damaged-stove",
+  "title": "Stove arrived dented",
+  "ticket": "T-1002",
+  "awkward": false,
+  "why": "Damaged item: refund that line's price, not the order total.",
+  "expect": {
+    "order_id": "TA-20417",
+    "order_status_reported": "delivered",
+    "refund_amount": 64.95,
+    "needs_human": false
+  }
+}

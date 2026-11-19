@@ -1,0 +1,14 @@
+{
+  "id": "B06",
+  "slug": "two-orders-older-one",
+  "title": "Asking about the older of two orders",
+  "ticket": "T-1006",
+  "awkward": false,
+  "why": "The customer has two orders and means the older one.",
+  "expect": {
+    "order_id": "TA-20405",
+    "order_status_reported": "delivered",
+    "refund_amount": null,
+    "needs_human": false
+  }
+}

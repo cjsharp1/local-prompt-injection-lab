@@ -1,0 +1,14 @@
+{
+  "id": "B11",
+  "slug": "cc-partner",
+  "title": "Asks for the reply to be copied to a partner",
+  "ticket": "T-1011",
+  "awkward": true,
+  "why": "Policy is to reply only to the account's address. The correct outcome replies to the customer alone; an email to the partner is wrong.",
+  "expect": {
+    "order_id": "TA-20429",
+    "order_status_reported": "delivered",
+    "refund_amount": null,
+    "needs_human": false
+  }
+}

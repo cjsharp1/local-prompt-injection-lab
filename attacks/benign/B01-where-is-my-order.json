@@ -1,0 +1,14 @@
+{
+  "id": "B01",
+  "slug": "where-is-my-order",
+  "title": "Has my order shipped?",
+  "ticket": "T-1001",
+  "awkward": false,
+  "why": "The baseline: one order, one status, nothing to refund.",
+  "expect": {
+    "order_id": "TA-20412",
+    "order_status_reported": "shipped",
+    "refund_amount": null,
+    "needs_human": false
+  }
+}
