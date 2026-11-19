@@ -16,6 +16,9 @@
  *
  *   <attack-id>      run one attack from attacks/ (the file name, without .json)
  *   --benign B01     or run one benign ticket (attacks/benign/B01-*.json)
+ *   --stack NAME     a named defence stack (default "none"): none, prompt,
+ *                    spotlight, classifier, output-filter, tool-permissions,
+ *                    privilege-separation, soft, all-but-separation, everything
  *   --model NAME     a local model (default: MODEL from .env)
  *   --reasoning      let the model reason first (only models that can)
  *   --verbose        print each row's full detail, not just its label
@@ -23,9 +26,9 @@
  *                    "decline" (the default, as the arena does) or "ask"
  *                    (a y/n prompt here in the terminal)
  *
- * --stack arrives with the defences (build step 8). The outcome is
- * decided by the same scorer the arena uses (server/scoring/), never by a
- * model — and the evidence it found is printed with it.
+ * The outcome is decided by the same scorer the arena uses
+ * (server/scoring/), never by a model — and the evidence it found is
+ * printed with it.
  */
 
 import "dotenv/config";
@@ -34,7 +37,7 @@ import type { LogEvent } from "../shared/types.js";
 import { ticketFacts } from "../server/attacks/facts.js";
 import { prepareAttack, type PreparedAttack } from "../server/attacks/insert.js";
 import { LibraryError, loadAttacks, loadBenign } from "../server/attacks/load.js";
-import { NO_DEFENSES } from "../server/defenses/settings.js";
+import { STACKS, describeDefenses, stackSettings } from "../server/defenses/settings.js";
 import { Logger } from "../server/logger.js";
 import { ToolServerClient, type Confirmer } from "../server/mcp/client.js";
 import { listModels, ollamaConfig } from "../server/model/ollama.js";
@@ -50,11 +53,17 @@ function flag(name: string): string | undefined {
 }
 const benignId = flag("--benign");
 /** The first argument that is not a flag or a flag's value. */
-const attackId = argv.find((a, i) => !a.startsWith("--") && !(i > 0 && ["--benign", "--model", "--confirm"].includes(argv[i - 1] ?? "")));
+const attackId = argv.find((a, i) => !a.startsWith("--") && !(i > 0 && ["--benign", "--model", "--confirm", "--stack"].includes(argv[i - 1] ?? "")));
 const model = flag("--model") ?? ollamaConfig().model;
 const reasoning = argv.includes("--reasoning");
 const verbose = argv.includes("--verbose");
 const confirmMode = flag("--confirm") ?? "decline";
+const stackName = flag("--stack") ?? "none";
+const defenses = stackSettings(stackName);
+if (!defenses) {
+  console.error(`No stack "${stackName}". The stacks are: ${Object.keys(STACKS).join(", ")}`);
+  process.exit(1);
+}
 
 if (!benignId && !attackId) {
   console.error("Usage: npm run attack -- <attack-id> | --benign B01  [--model NAME] [--reasoning] [--verbose] [--confirm ask|decline]");
@@ -115,7 +124,7 @@ const askInTerminal: Confirmer = async ({ message }) => {
 
 async function main(): Promise<void> {
   // Checked at load; repeated here because narrowing does not cross into a function.
-  if (!benign) return;
+  if (!benign || !defenses) return;
   if (reasoning) {
     const found = (await listModels()).find((m) => m.name === model);
     if (!found?.supportsThinking) {
@@ -133,15 +142,16 @@ async function main(): Promise<void> {
   if (attack) {
     prepared = prepareAttack(attack, await ticketFacts(tools, benign));
     console.log(`\n${attack.id} · ${attack.title}\n${attack.category} · goal ${JSON.stringify(attack.goal)} · rides on ${benign.id} (${benign.title}) · ${model}`);
+    console.log(`stack "${stackName}": ${describeDefenses(defenses)}`);
     console.log(`${attack.description}\n`);
   } else {
-    console.log(`\n${benign.id} · ${benign.title} · ticket ${benign.ticket} · ${model}\n`);
+    console.log(`\n${benign.id} · ${benign.title} · ticket ${benign.ticket} · ${model} · stack "${stackName}": ${describeDefenses(defenses)}\n`);
   }
 
   const result = await runTicket({
     ticketId: benign.ticket,
     model,
-    defenses: NO_DEFENSES,
+    defenses,
     reasoning,
     overlays: prepared?.overlays ?? [],
     ...(prepared?.chatMessage !== undefined ? { chatMessage: prepared.chatMessage } : {}),

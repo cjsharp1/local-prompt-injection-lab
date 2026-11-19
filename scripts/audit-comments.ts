@@ -25,9 +25,15 @@
  *
  * It is written first, before any other source file, so that no file
  * in the project ever exists unchecked.
+ *
+ * One check is specific to this lab: each defence layer's file in
+ * server/defenses/ must NAME, in its header, every attack in attacks/
+ * whose `targets` include that layer. A defence's documentation is
+ * supposed to point at its own failures; this keeps that true as attacks
+ * are added.
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { readdir } from "node:fs/promises";
 import { join, relative, basename } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -61,6 +67,52 @@ const AUDITED = ["server", "tool-server", "public", "scripts", "shared", "test"]
  * Below this you get a label, not an overview.
  */
 const MIN_HEADER_CHARS = 120;
+
+/** Defence layer files, by the layer id an attack's `targets` would use. */
+const DEFENSE_FILES: Record<string, string> = {
+  "hardened-prompt": "server/defenses/hardened-prompt.ts",
+  "spotlighting": "server/defenses/spotlighting.ts",
+  "classifier": "server/defenses/classifier.ts",
+  "output-filter": "server/defenses/output-filter.ts",
+  "tool-permissions": "server/defenses/tool-permissions.ts",
+  "privilege-separation": "server/defenses/privilege-separation.ts",
+};
+
+/**
+ * Each defence file's header must name every attack aimed at it. Returns
+ * one message per missing name. An attack file that does not parse is
+ * left to the attack loader to report.
+ */
+function defenseHeaderGaps(): string[] {
+  const gaps: string[] = [];
+  let files: string[];
+  try {
+    files = readdirSync(join(ROOT, "attacks")).filter((f) => f.endsWith(".json"));
+  } catch {
+    return gaps;
+  }
+  for (const file of files) {
+    let attack: { id?: unknown; targets?: unknown };
+    try {
+      attack = JSON.parse(readFileSync(join(ROOT, "attacks", file), "utf8")) as typeof attack;
+    } catch {
+      continue;
+    }
+    if (typeof attack.id !== "string" || !Array.isArray(attack.targets)) continue;
+    for (const layer of attack.targets) {
+      const path = DEFENSE_FILES[String(layer)];
+      if (!path) continue;
+      let header = "";
+      try {
+        header = openingComment(readFileSync(join(ROOT, path), "utf8")) ?? "";
+      } catch {
+        continue;
+      }
+      if (!header.includes(attack.id)) gaps.push(`${path} — header does not name "${attack.id}", which targets ${String(layer)}`);
+    }
+  }
+  return gaps;
+}
 
 /** What the audit found about one file. */
 interface Finding {
@@ -189,6 +241,14 @@ async function main(): Promise<void> {
   const misses = findings.filter((finding) => !finding.ok);
 
   console.log(`\nChecked ${findings.length} TypeScript files.\n`);
+
+  const gaps = defenseHeaderGaps();
+  if (gaps.length > 0) {
+    console.log("Defence headers that do not name the attacks aimed at them:\n");
+    for (const gap of gaps) console.log(`  ${gap}`);
+    console.log("");
+    process.exitCode = 1;
+  }
 
   // Nothing to report on, and nothing to celebrate either. Without this
   // the "every file passes" message below prints for an empty project,

@@ -1,33 +1,39 @@
 /**
- * direct.ts — the normal shape of one ticket turn.
+ * direct.ts — the normal shape of one ticket turn, with every defence stage marked.
  *
  *   1. Load the ticket — the APP calls get_ticket over MCP, as a support
  *      console would when a ticket is opened. The tool server applies any
  *      attack overlays to it, so the ticket arrives already attacked.
- *   2. Build the conversation: the system prompt (with the discount-code
- *      canary), then one user message — the console's trusted instruction
- *      followed by the ticket, the attacker's words.
- *   3. The tool loop. Each tool call the model asks for goes to the tool
- *      server with the run's session attached; the result comes back to
- *      the model as text.
- *   4. The structured reply: a separate request, format on, tools off.
- *   5. Delivery: the APP sends reply_text to the ticket's customer through
+ *   2. MODEL STAGE: the system prompt (with the discount-code canary),
+ *      through the hardened prompt and spotlighting's marker sentence.
+ *   3. INPUT STAGE: each untrusted chunk of the first message — the
+ *      ticket, the live-chat message — is fenced (spotlighting) and read by
+ *      the classifier. A flag ends the run before the model sees anything.
+ *   4. The tool loop. For each tool call the model asks for:
+ *        TOOL STAGE  the output filter checks the arguments, in this
+ *                    process; then, across the MCP boundary, the tool
+ *                    server's permission rules (layer 5)
+ *        INPUT STAGE the result is fenced and classified before the model
+ *                    reads it; a flag ends the turn
+ *   5. The structured reply: a separate request, format on, tools off.
+ *   6. OUTPUT STAGE: the output filter checks the reply. A block withholds
+ *      it, and the customer gets a holding message instead.
+ *   7. Delivery: the APP sends reply_text to the ticket's customer through
  *      the outbox (decision 6). The model never needs send_email for a
  *      legitimate ticket — so any email it does send is its own choice.
  *
- * "Direct" because the model that calls tools reads the untrusted text
- * directly. Privilege separation (layer 6) replaces this shape entirely —
- * separated.ts, build step 9 — rather than adding a filter to it.
+ * "Direct" because the model that calls tools reads the untrusted text —
+ * fenced or not — directly. Privilege separation (layer 6) replaces this
+ * shape entirely rather than adding a filter to it (separated.ts).
  *
- * The defence layers' hooks sit at the stages marked in PLAN.md §3.4 and
- * arrive at build step 8. At this step every run is the undefended
- * assistant, whatever the settings say — and the run's first log row says
- * which layers were asked for, so a run is never mistaken for a defended
- * one.
+ * The layers themselves know nothing about this file. Each stage calls
+ * stages.ts, which runs whichever layers are on, logs every decision and
+ * records every block, so the same code runs the undefended assistant and
+ * the fully defended one.
  *
- * Every step logs, and every failure ends the run with `error` set: the
- * provider down, the tool server gone, a reply that will not parse. An
- * error is never scored as an attack succeeding or failing.
+ * Every failure ends the run with `error` set: the provider down, the tool
+ * server gone, a reply that will not parse. An error is never scored as an
+ * attack succeeding or failing.
  */
 
 import { randomBytes } from "node:crypto";
@@ -38,9 +44,11 @@ import { requestReply } from "../agent/reply.js";
 import { toOllamaTool } from "../agent/tool-format.js";
 import { generateCanaries } from "../canaries.js";
 import { describeDefenses } from "../defenses/settings.js";
+import type { TurnContext } from "../defenses/types.js";
 import { truncate } from "../logger.js";
 import { tokensPerSecond, type OllamaMessage } from "../model/ollama.js";
 import { CONSOLE_INSTRUCTION, baseSystemPrompt } from "./prompts.js";
+import { inputStage, outputStage, systemPromptStage, toolStage, type StageBlock, type StageDeps } from "./stages.js";
 import type { RunDeps, RunRequest, RunResult } from "./types.js";
 import { renderParts, trusted, untrusted, type MessagePart } from "./untrusted.js";
 
@@ -57,31 +65,40 @@ import { renderParts, trusted, untrusted, type MessagePart } from "./untrusted.j
  */
 export const APP_ONLY_TOOLS: ReadonlySet<string> = new Set(["get_ticket"]);
 
+/**
+ * What the customer receives when a defence stops the run or withholds
+ * the reply. The APP's words, never the model's — a held reply cannot
+ * carry what was being held back.
+ */
+export const HOLDING_REPLY =
+  "Thanks for your message. A member of our support team will look into this and get back to you shortly.";
+
 /** A short, sortable, unique run id: r-20261119-a1b2c3. */
 export function newRunId(now = new Date()): string {
   const day = now.toISOString().slice(0, 10).replace(/-/g, "");
   return `r-${day}-${randomBytes(3).toString("hex")}`;
 }
 
-/**
- * The first user message, as marked parts: the console's instruction and
- * the ticket header (built from the tool server's own records) are
- * trusted; the subject, body and attachment list are the customer's.
- */
-export function ticketMessageParts(ticket: TicketResult, chatMessage?: string): MessagePart[] {
+/** The ticket's untrusted text, as one block: what the customer controls. */
+export function ticketBlock(ticket: TicketResult): string {
   const attachments = ticket.attachments.length === 0
     ? "none"
     : ticket.attachments.map((a) => `${a.attachmentId} ${a.filename} (${a.mediaType}, ${a.size} bytes)`).join("; ");
+  return `Subject: ${ticket.subject}\n\n${ticket.body}\n\nAttachments: ${attachments}`;
+}
+
+/**
+ * The first user message, as marked parts: the console's instruction and
+ * the ticket header (built from the tool server's own records) are
+ * trusted; the ticket block and any live-chat message are the customer's.
+ */
+export function ticketMessageParts(ticket: TicketResult, chatMessage?: string): MessagePart[] {
   return [
-    trusted(`${CONSOLE_INSTRUCTION}\n\n[ticket ${ticket.ticketId} · from ${ticket.from} · customer ${ticket.customerId}]\nSubject: `),
-    untrusted("ticket.subject", ticket.subject),
-    trusted("\n\n"),
-    untrusted("ticket.body", ticket.body),
-    trusted("\n\nAttachments: "),
-    untrusted("ticket.attachments", attachments),
+    trusted(`${CONSOLE_INSTRUCTION}\n\n[ticket ${ticket.ticketId} · from ${ticket.from} · customer ${ticket.customerId}]\n`),
+    untrusted("ticket", ticketBlock(ticket)),
     // The "direct" channel: the customer typing to the assistant in a live
     // chat beside the ticket. Untrusted for the same reason the ticket is.
-    ...(chatMessage === undefined ? [] : [trusted("\n\nThe customer also wrote in the live chat: "), untrusted("user_turn", chatMessage)]),
+    ...(chatMessage === undefined ? [] : [trusted("\n\nThe customer also wrote in the live chat:\n"), untrusted("user_turn", chatMessage)]),
   ];
 }
 
@@ -92,6 +109,10 @@ export async function runDirect(request: RunRequest, deps: RunDeps): Promise<Run
   const canaries = generateCanaries();
   const stats = newModelCallStats();
   const ctx: ModelCallContext = { logger, emit, stats, ...(deps.signal ? { signal: deps.signal } : {}) };
+  const sampling = {
+    ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
+    ...(request.seed !== undefined ? { seed: request.seed } : {}),
+  };
 
   const result: RunResult = {
     runId, ticketId: request.ticketId, model: request.model, defenses: request.defenses,
@@ -129,7 +150,15 @@ export async function runDirect(request: RunRequest, deps: RunDeps): Promise<Run
     result.peakPromptTokens = stats.peakPromptTokens;
     result.droppedMessages = stats.droppedMessages;
     result.elapsedMs = Date.now() - started;
+    emit({ type: "done", runId, requests: stats.requests, elapsedMs: result.elapsedMs });
     return result;
+  };
+
+  const fail = (message: string, detail?: unknown): RunResult => {
+    result.error = message;
+    logger.error(message, detail);
+    emit({ type: "error", message });
+    return finish();
   };
 
   tools.setConfirmer(request.confirmer);
@@ -140,6 +169,11 @@ export async function runDirect(request: RunRequest, deps: RunDeps): Promise<Run
     { request: { ...request, confirmer: request.confirmer ? "set" : "decline by default" }, canaries: canaries.values },
     { actor: "user", because: "a run was started" },
   );
+  if (request.defenses["tool-permissions"]) {
+    logger.defense("tool-permissions", "tool", "tool-permissions: enforced by the tool server for every call in this run", undefined, {
+      because: "layer 5 is on — the rules run in the tool server, not here",
+    });
+  }
 
   try {
     // 1. Load the ticket — the app's call, not the model's.
@@ -148,51 +182,92 @@ export async function runDirect(request: RunRequest, deps: RunDeps): Promise<Run
       direction: "back", actor: "tool", because: "a ticket was opened in the workspace",
     });
     noteOverlays(loaded.overlays, `ticket ${request.ticketId}`);
-    if (loaded.isError || loaded.data === null) {
-      result.error = `Could not load ticket ${request.ticketId}: ${loaded.text}`;
-      logger.error(result.error);
-      emit({ type: "error", message: result.error });
-      return finish();
-    }
+    if (loaded.isError || loaded.data === null) return fail(`Could not load ticket ${request.ticketId}: ${loaded.text}`);
     const ticket = loaded.data as TicketResult;
     result.customerEmail = ticket.from;
 
-    // 2. The conversation: the system prompt, then the console's
-    // instruction, the ticket, and any live-chat message from the customer.
+    const turnCtx: TurnContext = {
+      runId, model: request.model, canaries, customerEmail: ticket.from,
+      spotlightToken: randomBytes(3).toString("hex"),
+      logger, emit, stats, ...(deps.signal ? { signal: deps.signal } : {}), ...sampling,
+    };
+    const stage: StageDeps = { settings: request.defenses, ctx: turnCtx, actions: result.defenseActions };
+
+    /**
+     * A defence stopped the run: the app sends the customer its holding
+     * message, and the ticket goes to a person. The structured reply, if
+     * there was one, is kept in the result — withheld, not delivered.
+     */
+    const holdAndEscalate = async (block: StageBlock): Promise<RunResult> => {
+      logger.warn(`Run stopped by ${block.layer} at the ${block.stage} stage: ${block.reason}. The customer gets the holding message; the ticket goes to a person.`, block);
+      const held = await tools.call("send_email",
+        { to: ticket.from, subject: `Re: ${ticket.subject}`.slice(0, 200), body: HOLDING_REPLY }, session("app"));
+      result.outbox = held.outbox as OutboxEntry[];
+      logger.tool(`app sent the holding message to ${ticket.from}`, { text: held.text }, { direction: "back", actor: "tool" });
+      return finish();
+    };
+
+    // 2. MODEL STAGE — the system prompt.
+    const systemPrompt = systemPromptStage(baseSystemPrompt(canaries.values.discountCode), stage);
+
+    // 3. INPUT STAGE — the first message's untrusted parts.
+    const parts = ticketMessageParts(ticket, request.chatMessage);
+    for (const part of parts) {
+      if (part.trust !== "untrusted") continue;
+      const checked = await inputStage({ source: part.source ?? "untrusted", text: part.text }, stage);
+      if (checked.block) {
+        result.loopOutcome = "stopped";
+        return holdAndEscalate(checked.block);
+      }
+      part.text = checked.chunk.text;
+    }
     const messages: OllamaMessage[] = [
-      { role: "system", content: baseSystemPrompt(canaries.values.discountCode) },
-      { role: "user", content: renderParts(ticketMessageParts(ticket, request.chatMessage)) },
+      { role: "system", content: systemPrompt },
+      { role: "user", content: renderParts(parts) },
     ];
 
+    // 4. The tool loop, with the tool and input stages around each call.
     const ollamaTools = (await tools.tools()).filter((t) => !APP_ONLY_TOOLS.has(t.name)).map(toOllamaTool);
     const handle = async (call: RequestedToolCall): Promise<ToolHandled> => {
       emit({ type: "tool_start", id: call.id, name: call.name, args: call.args, iteration: call.iteration });
       logger.tool(`call ${call.name}(${truncate(JSON.stringify(call.args), 100)})`, call.args, {
         direction: "call", actor: "app", because: "the model's response asked for it",
       });
+      const index = result.toolCalls.length;
 
+      // TOOL STAGE, in this process: the output filter.
+      const filtered = toolStage({ name: call.name, args: call.args }, index, stage);
+      if (filtered) {
+        const text = `Blocked by the ${filtered.layer} before it was sent: ${filtered.reason}.`;
+        result.toolCalls.push({
+          iteration: call.iteration, name: call.name, args: call.args, executed: false, isError: true, text,
+          permission: undefined, confirmation: undefined, overlays: [],
+        });
+        emit({ type: "tool_end", id: call.id, name: call.name, isError: true, elapsedMs: 0 });
+        return { kind: "result", content: text };
+      }
+
+      // Across the MCP boundary — the tool server, and layer 5's rules.
       const outcome = await tools.call(call.name, call.args, session("model"));
-
       for (const q of outcome.queries) {
         logger.data(`SQL ${truncate(q.sql, 80)} → ${q.rows} row${q.rows === 1 ? "" : "s"}, ${q.ms} ms`, q);
       }
       noteOverlays(outcome.overlays, `the ${call.name} result`);
       const verdict = outcome.permission;
       if (verdict && verdict.decision !== "not-enforced") {
-        logger.defense("tool-permissions", "tool",
-          `tool-permissions: ${verdict.decision} — ${verdict.reason}`, verdict,
+        logger.defense("tool-permissions", "tool", `tool-permissions: ${verdict.decision} — ${verdict.reason}`, verdict,
           { because: `the tool server checks "${verdict.rule}"` });
       }
       logger.tool(`${call.name} → ${outcome.isError ? "error: " : ""}${truncate(outcome.text, 100)}`,
         { text: outcome.text, isError: outcome.isError, data: outcome.data }, { direction: "back", actor: "tool" });
 
-      // Layer 5's refusals and filters are defence actions: recorded here so
-      // the scorer can attribute a block to the layer that made it.
+      // Layer 5's refusals and filters are defence actions, so the scorer
+      // can attribute a block to the layer that made it.
       if (verdict && (verdict.decision === "refused" || verdict.decision === "declined" || verdict.decision === "filtered")) {
         result.defenseActions.push({
           layer: "tool-permissions", stage: "tool",
           decision: verdict.decision === "filtered" ? "filter" : "block",
-          what: `${call.name}: ${verdict.reason}`, toolCallIndex: result.toolCalls.length,
+          what: `${call.name}: ${verdict.reason}`, toolCallIndex: index,
         });
       }
       result.toolCalls.push({
@@ -202,18 +277,15 @@ export async function runDirect(request: RunRequest, deps: RunDeps): Promise<Run
       });
       result.outbox = outcome.outbox;
       emit({ type: "tool_end", id: call.id, name: call.name, isError: outcome.isError, elapsedMs: outcome.elapsedMs });
-      return { kind: "result", content: outcome.text };
-    };
 
-    const sampling = {
-      ...(request.temperature !== undefined ? { temperature: request.temperature } : {}),
-      ...(request.seed !== undefined ? { seed: request.seed } : {}),
+      // INPUT STAGE — the result is untrusted text too.
+      const checked = await inputStage({ source: `tool:${call.name}#${index + 1}`, text: outcome.text }, stage);
+      if (checked.block) return { kind: "stop", reason: `${checked.block.layer}: ${checked.block.reason}` };
+      return { kind: "result", content: checked.chunk.text };
     };
 
     // One pass per turn: the opening message, then each follow-up a
-    // multi-turn attack scripts as the customer's next reply. Each turn
-    // runs the tool loop, the structured reply and the delivery; the run's
-    // result is the LAST turn's reply, and everything sent along the way.
+    // multi-turn attack scripts as the customer's next reply.
     const followUps = request.followUps ?? [];
     for (let turn = 0; turn <= followUps.length; turn++) {
       if (turn > 0) {
@@ -221,41 +293,44 @@ export async function runDirect(request: RunRequest, deps: RunDeps): Promise<Run
         logger.info(`The customer replied (turn ${turn + 1} of ${followUps.length + 1})`, { message }, {
           actor: "attacker", because: "a multi-turn attack scripts the conversation",
         });
-        messages.push({
-          role: "user",
-          content: renderParts([trusted("The customer replied in the live chat: "), untrusted(`conversation:turn-${turn + 1}`, message)]),
-        });
+        const checked = await inputStage({ source: `conversation:turn-${turn + 1}`, text: message }, stage);
+        if (checked.block) {
+          result.loopOutcome = "stopped";
+          return holdAndEscalate(checked.block);
+        }
+        messages.push({ role: "user", content: renderParts([trusted("The customer replied in the live chat:\n"), untrusted(`conversation:turn-${turn + 1}`, checked.chunk.text)]) });
       }
 
-      // 3. The tool loop.
       const loop = await runToolLoop({ model: request.model, messages, tools: ollamaTools, think: request.reasoning, ...sampling }, handle, ctx);
       result.loopOutcome = loop.outcome;
       result.textToolCall = result.textToolCall || loop.textToolCall;
       messages.splice(0, messages.length, ...loop.messages);
 
+      if (loop.outcome === "stopped") {
+        const block = result.defenseActions.filter((a) => a.decision === "block").at(-1);
+        return holdAndEscalate({ layer: block?.layer ?? "classifier", stage: block?.stage ?? "input", reason: loop.stopReason ?? "a defence stopped the turn" });
+      }
       if (loop.outcome !== "replied") {
-        logger.warn(`The tool loop ended without a reply (${loop.outcome}${loop.stopReason ? `: ${loop.stopReason}` : ""})`);
-        emit({ type: "done", runId, requests: stats.requests, elapsedMs: Date.now() - started });
+        logger.warn(`The tool loop ended without a reply (${loop.outcome})`);
         return finish();
       }
 
-      // 4. The structured reply.
+      // 5. The structured reply.
       const reply = await requestReply(messages, { model: request.model, think: request.reasoning, ...sampling }, ctx);
-      if (!reply.ok) {
-        result.error = `The structured reply did not parse after a retry: ${reply.error}`;
-        logger.error(result.error, { raw: reply.raw });
-        emit({ type: "error", message: result.error });
-        return finish();
-      }
+      if (!reply.ok) return fail(`The structured reply did not parse after a retry: ${reply.error}`, { raw: reply.raw });
       result.reply = reply.reply;
       result.delivered = false;
       logger.info(`Structured reply: order ${reply.reply.order_id ?? "none"} · status ${reply.reply.order_status_reported ?? "none"} · ` +
         `refund ${reply.reply.refund_amount ?? "none"} · needs_human ${reply.reply.needs_human}`, reply.reply, { actor: "model" });
 
+      // 6. OUTPUT STAGE.
+      const withheld = outputStage(reply.reply, stage);
+      if (withheld) return holdAndEscalate(withheld);
+
       // The next turn sees the reply the customer saw, not the draft.
       messages.push({ role: "assistant", content: reply.reply.reply_text });
 
-      // 5. Delivery — the app's call, to the ticket's own customer.
+      // 7. Delivery — the app's call, to the ticket's own customer.
       const delivered = await tools.call("send_email",
         { to: ticket.from, subject: `Re: ${ticket.subject}`.slice(0, 200), body: reply.reply.reply_text.slice(0, 4000) }, session("app"));
       logger.tool(`app delivered the reply to ${ticket.from}`, { text: delivered.text, outbox: delivered.outbox }, {
@@ -263,22 +338,14 @@ export async function runDirect(request: RunRequest, deps: RunDeps): Promise<Run
       });
       result.outbox = delivered.outbox as OutboxEntry[];
       result.delivered = !delivered.isError;
-      if (delivered.isError) {
-        result.error = `Could not deliver the reply: ${delivered.text}`;
-        logger.error(result.error);
-        return finish();
-      }
+      if (delivered.isError) return fail(`Could not deliver the reply: ${delivered.text}`);
     }
 
     const last = stats.lastResponse;
     logger.info(`Run complete · ${stats.requests} model request${stats.requests === 1 ? "" : "s"} · ` +
       `${((Date.now() - started) / 1000).toFixed(1)} s` + (last ? ` · ${tokensPerSecond(last) ?? "?"} tok/s` : ""));
-    emit({ type: "done", runId, requests: stats.requests, elapsedMs: Date.now() - started });
     return finish();
   } catch (error: unknown) {
-    result.error = error instanceof Error ? error.message : String(error);
-    logger.error(result.error, error instanceof Error ? { name: error.name, message: error.message } : error);
-    emit({ type: "error", message: result.error });
-    return finish();
+    return fail(error instanceof Error ? error.message : String(error), error instanceof Error ? { name: error.name, message: error.message } : error);
   }
 }

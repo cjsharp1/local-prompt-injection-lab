@@ -45,6 +45,34 @@ export const NO_DEFENSES: DefenseSettings = {
 };
 
 /**
+ * The arena's named stacks (PLAN §9.1): a fixed list, not every
+ * combination. Each one is a question the results answer — what does this
+ * layer buy alone, what do the soft layers buy together, what does
+ * everything buy, and what is left for privilege separation to add.
+ */
+export const STACKS: Readonly<Record<string, readonly DefenseId[]>> = {
+  "none": [],
+  "prompt": ["hardened-prompt"],
+  "spotlight": ["spotlighting"],
+  "classifier": ["classifier"],
+  "output-filter": ["output-filter"],
+  "tool-permissions": ["tool-permissions"],
+  "privilege-separation": ["privilege-separation"],
+  "soft": ["hardened-prompt", "spotlighting"],
+  "all-but-separation": ["hardened-prompt", "spotlighting", "classifier", "output-filter", "tool-permissions"],
+  "everything": ["hardened-prompt", "spotlighting", "classifier", "output-filter", "tool-permissions", "privilege-separation"],
+};
+
+/** The settings for a named stack, or undefined if there is no such stack. */
+export function stackSettings(name: string): DefenseSettings | undefined {
+  const ids = STACKS[name];
+  if (!ids) return undefined;
+  const out = { ...NO_DEFENSES };
+  for (const id of ids) out[id] = true;
+  return out;
+}
+
+/**
  * Reads defence settings from a request body or a set of flags. Missing
  * or non-boolean values are OFF — the lab's default, stated, not hidden.
  */

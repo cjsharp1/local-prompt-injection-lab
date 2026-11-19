@@ -108,7 +108,8 @@ export interface GoalEvidence {
  *                damage happened
  *   error        the provider, the tool server or the reply format failed.
  *                Never counted as success or failure; its own column
- *   blocked      a defence layer stopped the attempt, or stopped the run
+ *   blocked      a defence layer blocked something during the run: the
+ *                attempt itself, a step towards it, or the whole run
  *   failed-task  no success and no block, but the ticket's real task was
  *                not done either — including an attempt that failed by
  *                itself (bad arguments, say)
