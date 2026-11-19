@@ -18,13 +18,18 @@
 
 <header class="top">
   <h1>Local Prompt Injection Lab</h1>
-  <span class="tagline">Attacks, defences and what each costs — scored by code, on your machine. No API key; nothing leaves this machine.</span>
+  <span class="tagline">Attacks, defences and what each costs — on your machine, no API key.</span>
   <span class="spacer"></span>
   <label class="field-inline">Model <select id="model-select" aria-label="Model"></select></label>
   <label class="field-inline" id="reasoning-label"><input type="checkbox" id="reasoning"> Show reasoning</label>
-  <span id="run-status" aria-live="polite" hidden><span class="spinner" aria-hidden="true"></span><span id="run-status-text"></span><span id="run-status-time" class="muted"></span></span>
   <button id="run" class="run-button" type="button">Run</button>
 </header>
+<!-- The run's progress: its own strip under the header, so the header holds controls only. -->
+<div id="run-status" aria-live="polite" hidden>
+  <span class="spinner" aria-hidden="true"></span>
+  <span id="run-status-text"></span>
+  <span id="run-status-time"></span>
+</div>
 <div id="banner" role="status" hidden></div>
 
 <main>

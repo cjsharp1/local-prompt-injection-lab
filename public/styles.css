@@ -128,9 +128,7 @@ header.top {
   flex-wrap: wrap;
 }
 header.top h1 { font-size: 1rem; margin: 0; font-weight: 650; }
-header.top .tagline { color: var(--fg-dim); font-size: 0.78rem; flex: 1 1 0; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-/* The tagline gives way (ellipsis) so the progress line and the button stay on one row. */
-header.top .spacer { display: none; }
+header.top .tagline { color: var(--fg-dim); font-size: 0.78rem; }
 .spacer { flex: 1; }
 .field-inline { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.8rem; color: var(--fg-dim); }
 select, textarea {
@@ -151,14 +149,41 @@ select, textarea {
 .run-button:disabled { opacity: 0.55; cursor: progress; }
 .run-button.stop { background: var(--bad); }
 
-/* The run's progress, beside the button: spinner, current step, elapsed time. */
-#run-status { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.8rem; max-width: 34rem; }
+/* The run's progress: a slim strip under the header, shown once a run
+   starts. While running it is tinted, with a spinner and a thin bar moving
+   along its bottom edge; when the run ends it settles to a muted summary
+   ("Done in 41 s") until the next run. */
+#run-status {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.3rem 1rem;
+  font-size: 0.8rem;
+  color: var(--fg-dim);
+  background: var(--surface-sunk);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+#run-status.running { color: var(--fg); background: var(--accent-soft); }
 #run-status-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#run-status-time { font-variant-numeric: tabular-nums; white-space: nowrap; }
-.spinner { display: none; width: 0.9rem; height: 0.9rem; border-radius: 50%; border: 2px solid var(--border); border-top-color: var(--accent); flex: 0 0 auto; }
+#run-status-time { margin-left: auto; font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--fg-dim); }
+.spinner { display: none; width: 0.85rem; height: 0.85rem; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--accent) 30%, transparent); border-top-color: var(--accent); flex: 0 0 auto; }
 #run-status.running .spinner { display: inline-block; animation: spin 0.8s linear infinite; }
+#run-status.running::after {
+  content: "";
+  position: absolute;
+  left: 0; bottom: 0;
+  height: 2px; width: 30%;
+  background: var(--accent);
+  animation: slide 1.6s ease-in-out infinite;
+}
 @keyframes spin { to { transform: rotate(360deg); } }
-@media (prefers-reduced-motion: reduce) { #run-status.running .spinner { animation-duration: 2.4s; } }
+@keyframes slide { from { transform: translateX(-100%); } to { transform: translateX(340%); } }
+@media (prefers-reduced-motion: reduce) {
+  #run-status.running .spinner { animation-duration: 2.4s; }
+  #run-status.running::after { animation: none; width: 100%; opacity: 0.5; }
+}
 .waiting { color: var(--fg-dim); font-style: italic; }
 #banner {
   padding: 0.45rem 1rem;
