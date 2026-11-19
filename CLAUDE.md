@@ -1,9 +1,5 @@
 # CLAUDE.md
 
-> **Draft**, written with PLAN.md before any code exists. Commands,
-> paths and "things that bite" are provisional until the build steps
-> that create them. Update this file as each step lands.
-
 Guidance for Claude Code when working in this repository.
 
 ## What this project is
@@ -67,8 +63,9 @@ changes, update the comment in the same edit.
 | `npm run check-env` | Each dependency checked separately, with the fix |
 | `npm run try-model` | One raw request to the model, printed in full |
 | `npm run try-tools` | Every tool over MCP, no model, error and permission paths included. Run after any tool change |
-| `npm run attack -- <id> --stack <name>` | One attack (or `--benign B01`) through the whole pipeline, in the terminal (`--model`, `--reasoning`, `--verbose`, `--confirm ask`) |
-| `npm run arena` | The full matrix → `docs/arena-results.*` (long: an overnight run; resumable; `--quick` ≈ 10 min) |
+| `npm run attack -- <id> --stack <name>` | One attack (or `--benign B01`, or `--all`) through the whole pipeline, in the terminal (`--model`, `--reasoning`, `--verbose`, `--confirm ask`) |
+| `npm run arena` | The full matrix → `docs/arena-results.*` (~9 h; resumable; `--quick` ≈ 4 min into `.arena/`) |
+| `npm run arena:report` | Rebuild `docs/arena-results.md` from the JSON |
 | `npm run model-eval` | The benign suite × both models → `docs/model-eval.*` |
 | `npm run tool-server:http` | The tool server over HTTP on 3301, for MCP Inspector |
 
@@ -88,12 +85,17 @@ if a tool changed.
   - It keeps one in-memory outbox per run.
 - **`server/`**: the app.
   - `pipeline/run.ts` is the entry point for one ticket turn.
-    `direct.ts` and `separated.ts` are the two pipeline shapes.
+    `direct.ts` and `separated.ts` are the two pipeline shapes, and
+    `run-context.ts` is everything they share (ticket loading, tool
+    calls, the holding message, reply and delivery). `stages.ts` runs
+    the enabled defence layers at each stage and logs every decision.
+    `quarantine.ts` and `projection.ts` belong to the separated shape.
   - `agent/loop.ts` is the tool loop. `agent/reply.ts` makes the
     structured-reply request.
   - `defenses/` holds one file per layer behind one interface
     (`types.ts`).
-  - `scoring/` is code that decides outcomes.
+  - `scoring/` is code that decides outcomes; `arena/` holds the setup
+    hash, the results file and the report.
   - `mcp/client.ts` spawns the tool server (`tsx` in dev, `dist/` after
     build; it picks by its own file extension).
   - The pipeline takes a `Logger` and an `emit` function, never an HTTP
@@ -175,15 +177,19 @@ trusting a remembered API shape. Carried over from earlier measurement,
 to re-confirm in step 0:
 
 - **llama3.2:3b's chat template renders tool definitions only into the
-  last message, and only if it is a user message.**
+  last message, and only if it is a user message** (decisions 14 and 15).
   - This is why the ticket goes into the first user message, not a
     pre-filled tool result.
   - After a tool result, llama can't see the tools. A forbidden action
     it never attempts may mean it couldn't, not that it resisted.
   - It effectively gets one useful tool call per turn, which is why the
     model is not offered `get_ticket` (decision 14, `APP_ONLY_TOOLS` in
-    `pipeline/direct.ts`): a redundant first call failed the task in
+    `pipeline/run-context.ts`): a redundant first call failed the task in
     step 5.
+  - A neutral "continue" message after tool results was tried and made
+    llama worse (it looped on `send_email`); it was reverted. Do not
+    reword it until llama passes. That is tuning to a result, and
+    llama's limit is reported as a finding.
   - Don't infer dropped history from a shrinking `prompt_eval_count`.
 - **qwen3.5:4b thinks by default.** Always send `think`.
 - **Ollama silently drops whole messages** past `num_ctx`, keeping the
@@ -214,6 +220,20 @@ to re-confirm in step 0:
   error.
 - Tool wording is prompt text: how a tool result describes withheld
   data becomes how the model describes it to the customer.
+
+## Changing anything the arena measures
+
+The arena keys every result by a hash of the files that decide what a
+run means: everything in `server/defenses/`, `server/scoring/`,
+`server/pipeline/`, `server/agent/`, `tool-server/tools/definitions/`,
+`tool-server/permissions.ts`, `tool-server/tools/common.ts`, and each
+item's attack and benign files (`server/arena/setup-hash.ts`). Editing any
+of them, even a comment, makes earlier results **stale**: the report
+leaves them out and the arena reruns those cells. That is deliberate.
+Do it knowingly, and never to improve a published number.
+
+Scoring-rule changes made during the build (all before any arena run)
+are recorded in PLAN.md §8.4 and §5.2.
 
 ## Documentation to keep in sync
 
