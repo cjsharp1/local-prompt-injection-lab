@@ -12,10 +12,16 @@
  * connection and stops asking the model. The response is a stream of
  * Server-Sent Events, read here line by line:
  *
- *   log       → a row in the activity log (and a card in the pipeline view)
+ *   log       → a row in the activity log (and a step in the pipeline view)
  *   confirm   → the confirmation dialog; the answer goes to /api/confirm
- *   result    → the workspace's reply, outbox and outcome badge
+ *   result    → the Reply tab's reply, outbox and outcome badge
  *   error     → the banner
+ *
+ * The page has two columns: the setup (studio, defences) on the left and
+ * the run (pipeline, then Activity log | Reply | Results tabs) on the
+ * right. A run keeps the log tab showing, since that is where things
+ * happen; when the result arrives the Reply tab gets a dot rather than
+ * snatching the view away.
  *
  * The import graph runs one way: this file imports the panels; the panels
  * import dom.ts, state.ts and log.ts; nothing imports app.ts.
@@ -73,9 +79,26 @@ function showTab(name: string): void {
   for (const tab of document.querySelectorAll<HTMLButtonElement>(".tab")) {
     const on = tab.dataset.tab === name;
     tab.classList.toggle("active", on);
+    if (on) tab.classList.remove("has-news");
     byId(`tab-${tab.dataset.tab ?? ""}`).hidden = !on;
   }
+  // Clear log acts on the log, so it only shows beside it.
+  byId("clear-log").hidden = name !== "log";
   if (name === "results") void renderResults();
+}
+
+/** Marks a tab that has something new, unless it is already showing. */
+function markTab(name: string): void {
+  const tab = document.querySelector<HTMLButtonElement>(`.tab[data-tab="${name}"]`);
+  if (tab && !tab.classList.contains("active")) tab.classList.add("has-news");
+}
+
+/** A pipeline card was clicked: show its row in the activity log. */
+function jumpToRow(row: HTMLElement): void {
+  showTab("log");
+  row.scrollIntoView({ block: "center" });
+  row.classList.add("flash");
+  setTimeout(() => row.classList.remove("flash"), 1200);
 }
 
 async function run(): Promise<void> {
@@ -92,7 +115,7 @@ async function run(): Promise<void> {
   resetPipeline();
   const a = state.customAttack !== undefined ? "your attack" : selectedAttack()?.title ?? `benign ${state.benignId}`;
   logDivider(`${a} · ${state.model} · stack ${state.stack}`);
-  showTab("workspace");
+  showTab("log");
 
   try {
     const response = await fetch("/api/run", {
@@ -155,6 +178,7 @@ function handle(event: StreamEvent): void {
       state.lastRecord = event.record;
       renderRecord(event.record);
       showOutcome(event.record);
+      markTab("reply");
       return;
     case "error":
       banner(event.message);
@@ -186,10 +210,10 @@ function renderModels(meta: MetaResponse): void {
 }
 
 async function main(): Promise<void> {
-  initPipeline();
+  initPipeline(jumpToRow);
   clearRecord();
   for (const tab of document.querySelectorAll<HTMLButtonElement>(".tab")) {
-    tab.addEventListener("click", () => showTab(tab.dataset.tab ?? "studio"));
+    tab.addEventListener("click", () => showTab(tab.dataset.tab ?? "log"));
   }
   byId("run").addEventListener("click", () => void run());
   byId("clear-log").addEventListener("click", () => clearLog());

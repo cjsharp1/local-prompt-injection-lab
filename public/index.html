@@ -7,9 +7,10 @@
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="styles.css">
 <!--
-  The lab's page. Left: the Attack studio, the ticket workspace and the
-  arena results, as tabs. Middle: the defence panel and the pipeline view.
-  Right: the activity log. Wired up by app.js (compiled in place from
+  The lab's page, in two columns. Left: what you set before a run, the
+  Attack studio and the defence panel. Right: what a run produces, the
+  pipeline view, then the activity log, the reply and the arena results
+  as tabs. Wired up by app.js (compiled in place from
   app.ts). Everything dynamic is built with textContent — attack payloads
   included — and nothing here or in the scripts uses innerHTML.
 -->
@@ -33,15 +34,10 @@
 <div id="banner" role="status" hidden></div>
 
 <main>
-  <!-- LEFT: studio · workspace · results ------------------------------------>
-  <section class="pane" id="left-pane" aria-label="Attack studio, workspace and results">
-    <div class="pane-bar">
-      <button class="tab active" type="button" data-tab="studio">Attack studio</button>
-      <button class="tab" type="button" data-tab="workspace">Ticket workspace</button>
-      <button class="tab" type="button" data-tab="results">Results</button>
-    </div>
-
-    <div class="pane-body" id="tab-studio">
+  <!-- LEFT: what you set before a run — the attack, then the defences ------>
+  <section class="pane" id="setup-pane" aria-label="Attack studio and defences">
+    <div class="pane-bar"><span class="pane-title">Attack studio</span></div>
+    <div class="pane-body" id="studio-body">
       <div id="studio-picker"></div>
       <div id="studio-about"></div>
       <div class="section-title">
@@ -59,35 +55,32 @@
         </div>
       </details>
     </div>
-
-    <div class="pane-body" id="tab-workspace" hidden>
-      <div class="section-title">The ticket</div>
-      <div id="ticket-view"></div>
-      <div class="section-title">The assistant's reply</div>
-      <div id="result-view"></div>
-    </div>
-
-    <div class="pane-body" id="tab-results" hidden>
-      <div id="results-view"></div>
-    </div>
-  </section>
-
-  <!-- MIDDLE: defences · pipeline ------------------------------------------->
-  <section class="pane" id="middle-pane" aria-label="Defences and pipeline">
     <div class="pane-bar"><span class="pane-title">Defences</span></div>
     <div class="pane-body" id="defense-panel"></div>
-    <div class="pane-bar"><span class="pane-title">Pipeline</span><span class="muted small">click a card to find it in the log</span></div>
-    <div class="pane-body" id="pipeline"></div>
   </section>
 
-  <!-- RIGHT: activity log ----------------------------------------------------->
-  <section class="pane" id="log-pane" aria-label="Activity log">
+  <!-- RIGHT: what a run produces — the pipeline, then log · reply · results -->
+  <section class="pane" id="run-pane" aria-label="Pipeline, activity log, reply and results">
+    <div class="pane-bar"><span class="pane-title">Pipeline</span><span class="muted small">hover a card for the full text · click it to find it in the log</span></div>
+    <div class="pane-body" id="pipeline"></div>
     <div class="pane-bar">
-      <span class="pane-title">Activity log</span>
+      <button class="tab active" type="button" data-tab="log">Activity log</button>
+      <button class="tab" type="button" data-tab="reply">Reply</button>
+      <button class="tab" type="button" data-tab="results">Results</button>
       <span class="spacer"></span>
-      <button id="clear-log" class="bar-button" type="button">Clear</button>
+      <button id="clear-log" class="bar-button" type="button">Clear log</button>
     </div>
-    <div id="log-scroll"><ol id="log-rows"></ol></div>
+    <div id="tab-log" class="tab-body"><div id="log-scroll"><ol id="log-rows"></ol></div></div>
+    <div id="tab-reply" class="tab-body pane-body" hidden>
+      <div id="result-view"></div>
+      <details class="ticket-details">
+        <summary>The ticket, as the run loaded it</summary>
+        <div id="ticket-view"></div>
+      </details>
+    </div>
+    <div id="tab-results" class="tab-body pane-body" hidden>
+      <div id="results-view"></div>
+    </div>
   </section>
 </main>
 
