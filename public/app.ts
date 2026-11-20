@@ -27,7 +27,7 @@
  * import dom.ts, state.ts and log.ts; nothing imports app.ts.
  */
 
-import { askPerson } from "./confirm.js";
+import { askPerson, dismissAsk } from "./confirm.js";
 import { renderDefenses } from "./defenses.js";
 import { byId, el } from "./dom.js";
 import { appendLog, clearLog, logDivider } from "./log.js";
@@ -154,6 +154,7 @@ async function run(): Promise<void> {
       banner(error instanceof Error ? error.message : String(error));
     }
   } finally {
+    dismissAsk();
     state.running = false;
     runAbort = undefined;
     setRunButton(false);
@@ -169,6 +170,7 @@ function handle(event: StreamEvent): void {
     case "confirm":
       setStep("Waiting for your answer in the dialog…");
       void askPerson(event.message).then((allow) => {
+        if (allow === undefined) return; // the run ended first; the server has already declined
         setStep(allow ? "Allowed — the tool is running…" : "Declined — carrying on without it…");
         return fetch("/api/confirm", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: event.id, allow }) });
       });

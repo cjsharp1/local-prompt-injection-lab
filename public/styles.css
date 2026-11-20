@@ -219,7 +219,7 @@ main {
 #studio-body { flex: 1 1 auto; }
 #defense-panel { flex: 0 1 auto; max-height: 50%; }
 /* Right: the pipeline strip keeps a capped height; the tab body below fills the rest. */
-#pipeline { flex: 0 0 auto; max-height: 34%; }
+#pipeline { flex: 0 0 auto; max-height: 48%; }
 .tab-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow-y: auto; }
 .tab-body[hidden] { display: none; }
 .tab.has-news::after { content: " •"; color: var(--accent); }
