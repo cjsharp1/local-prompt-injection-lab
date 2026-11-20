@@ -1,5 +1,5 @@
 /**
- * stages.ts — runs the enabled defence layers at each stage, and records what they did.
+ * stages.ts — runs the enabled defense layers at each stage, and records what they did.
  *
  * The pipeline calls one function per stage. Each one runs every ENABLED
  * layer that has a hook for that stage, in registry order, and:
@@ -17,7 +17,7 @@
  *     with a block it did not make
  *
  * Layers never log or record by themselves. Routing every decision
- * through here is what makes "every defence decision is visible" true by
+ * through here is what makes "every defense decision is visible" true by
  * construction rather than by each layer remembering to say so.
  */
 

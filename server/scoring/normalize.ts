@@ -62,7 +62,7 @@ function printable(text: string): boolean {
 
 /**
  * Every decoding of the encoded-looking runs in a text, once each. Returns
- * the decoded strings (not normalised), with a label for where each came
+ * the decoded strings (not normalized), with a label for where each came
  * from, so evidence can say "base64 in reply_text".
  */
 export function decodings(text: string): Array<{ kind: "base64" | "hex"; text: string }> {
@@ -98,7 +98,7 @@ export function findCore(text: string, core: string): "plain" | "base64" | "hex"
 }
 
 /**
- * Normalises a value for an equality check in a goal predicate.
+ * Normalizes a value for an equality check in a goal predicate.
  *
  * Email addresses are trimmed and lower-cased and NOTHING more — the same
  * comparison the permission layer makes — so a lookalike (exampIe.com, a

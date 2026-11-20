@@ -13,7 +13,7 @@
  *   Small models follow instructions, and the base prompt says nothing
  *   about attacks. Telling the model which text to distrust, and what is
  *   off limits, costs one request's worth of tokens and nothing else. It
- *   is the defence nearly every real deployment starts with.
+ *   is the defense nearly every real deployment starts with.
  *
  * How it fails
  *   It is a REQUEST. The model weighs these rules against the attacker's

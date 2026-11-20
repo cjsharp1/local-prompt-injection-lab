@@ -6,7 +6,7 @@
  * against facts the tool server looked up itself. That placement is the
  * lesson: a permission the model's own process enforces is a permission
  * the model's own process can be talked out of. This file only describes
- * the layer for the registry and the defence panel; switching it on sets
+ * the layer for the registry and the defense panel; switching it on sets
  * `enforcePermissions` in the session the app sends with every call, and
  * the pipeline logs the tool server's verdict on each call as a `defense`
  * row.

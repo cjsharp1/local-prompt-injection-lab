@@ -8,7 +8,7 @@
  *      `ToolHandler`, append what the handler says the model should read,
  *      and go back to 1.
  *   3. When it stops asking, its last text is the DRAFT. The structured
- *      reply is a separate request afterwards (reply.ts) — format and
+ *      reply is a separate request afterward (reply.ts) — format and
  *      tools cannot share one.
  *
  * At most MAX_ITERATIONS model requests per turn.
@@ -17,16 +17,16 @@
  * What the loop does not know
  * ---------------------------------------------------------------------------
  *
- * It does not know where tools run, what a defence is, or who is watching.
+ * It does not know where tools run, what a defense is, or who is watching.
  * Each tool call goes to a `ToolHandler` supplied by the pipeline, which
- * is where the defences at the tool stage act (the output filter, then the
+ * is where the defenses at the tool stage act (the output filter, then the
  * tool server's permission layer), and where a tool's result passes
  * through the input stage (spotlighting, the classifier) before the model
  * reads it. The handler returns the text the model should see — or tells
- * the loop to stop, which is how a defence ends a turn mid-way.
+ * the loop to stop, which is how a defense ends a turn mid-way.
  *
- * Keeping the loop ignorant of the defences is deliberate. The same loop
- * runs with no defences and with all of them; the difference between two
+ * Keeping the loop ignorant of the defenses is deliberate. The same loop
+ * runs with no defenses and with all of them; the difference between two
  * runs is in the handler and the messages, never in this file.
  *
  * ---------------------------------------------------------------------------
@@ -34,7 +34,7 @@
  * ---------------------------------------------------------------------------
  *
  *   Unknown tool name        → a tool message listing the real ones; warn.
- *   Tool call written as     → detected by a HEURISTIC (a guess, labelled as
+ *   Tool call written as     → detected by a HEURISTIC (a guess, labeled as
  *   text, not made             one); warn; NOT executed — quietly running it
  *                              would hide the failure. Scored as the model
  *                              failing, never as an attack succeeding.
@@ -83,7 +83,7 @@ export interface ToolLoopResult {
   /**
    *   replied     the model stopped calling tools; `draft` is its last text
    *   unfinished  the iteration cap, or the same call twice in a row
-   *   stopped     the handler stopped the turn (a defence ended it)
+   *   stopped     the handler stopped the turn (a defense ended it)
    */
   outcome: "replied" | "unfinished" | "stopped";
   draft: string;

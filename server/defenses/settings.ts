@@ -1,7 +1,7 @@
 /**
- * settings.ts — which defence layers are on, and how to say so.
+ * settings.ts — which defense layers are on, and how to say so.
  *
- * Six layers, each switchable, each labelled with how far it can be
+ * Six layers, each switchable, each labeled with how far it can be
  * trusted (the full descriptions are in each layer's own file):
  *
  *   1. hardened-prompt       SOFT    model stage — rules in the system prompt
@@ -73,7 +73,7 @@ export function stackSettings(name: string): DefenseSettings | undefined {
 }
 
 /**
- * Reads defence settings from a request body or a set of flags. Missing
+ * Reads defense settings from a request body or a set of flags. Missing
  * or non-boolean values are OFF — the lab's default, stated, not hidden.
  */
 export function parseDefenses(input: unknown): DefenseSettings {

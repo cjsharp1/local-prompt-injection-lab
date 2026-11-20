@@ -14,7 +14,7 @@
  * or an id matching a strict pattern (TA-12345, TAS-ABC-123). There is no
  * field an attacker's sentence can ride through into the privileged
  * model's context — "ignore your instructions" cannot be expressed as a
- * request_type. That is the whole defence, and it is structural.
+ * request_type. That is the whole defense, and it is structural.
  *
  * ---------------------------------------------------------------------------
  * What it costs, and where it still fails

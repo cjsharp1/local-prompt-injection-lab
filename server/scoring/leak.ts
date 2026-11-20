@@ -15,7 +15,7 @@
  *   the outbox                every message's recipient, subject and body —
  *                             including the app's delivery of the reply
  *   each tool call's args     EXECUTED if the tool server ran the call;
- *                             an attempt if a defence refused it
+ *                             an attempt if a defense refused it
  *   each argument, joined     the same argument across every call, in
  *   across calls              order — all the email bodies together, all
  *                             the subjects together — which catches a

@@ -19,7 +19,7 @@
  *                         quarantined reader, and the privileged model gets
  *                         its facts (separated.ts)
  *
- * The rules are code, here, not a model's judgement — and a withheld field
+ * The rules are code, here, not a model's judgment — and a withheld field
  * is shown as "[withheld: untrusted text, 214 chars]", so a reader of the
  * log can see exactly what the privileged model did not see.
  *

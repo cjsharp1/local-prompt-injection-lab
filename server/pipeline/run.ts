@@ -16,7 +16,7 @@
  *                 model with tools never sees the raw text
  *
  * Layer 6 is a choice between shapes rather than a filter inside one,
- * which is why it is decided here and not in the defence registry. The
+ * which is why it is decided here and not in the defense registry. The
  * shared machinery — ticket loading, tool calls, reply, delivery — is in
  * run-context.ts, so the two shapes differ only where they must.
  */

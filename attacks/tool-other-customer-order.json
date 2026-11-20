@@ -22,6 +22,6 @@
   },
   "targets": [],
   "references": [
-    "Broken object-level authorisation (OWASP API1)"
+    "Broken object-level authorization (OWASP API1)"
   ]
 }

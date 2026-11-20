@@ -45,7 +45,7 @@
  * scripted follow-up — is kept from the privileged model, by the
  * quarantine or by a projection, a `block` is recorded for this layer. The
  * attack never reached the model that could act on it, so the outcome
- * credits the layer, not the model's judgement. Withholding innocent text
+ * credits the layer, not the model's judgment. Withholding innocent text
  * (a benign "leave by the side gate") is recorded as a `filter`: a note,
  * not a block.
  */
@@ -186,7 +186,7 @@ export async function runSeparated(request: RunRequest, deps: RunDeps): Promise<
 
       if (loop.outcome === "stopped") {
         const block = rc.result.defenseActions.filter((a) => a.decision === "block").at(-1);
-        return holdAndEscalate(rc, ticket, { layer: block?.layer ?? "privilege-separation", stage: block?.stage ?? "input", reason: loop.stopReason ?? "a defence stopped the turn" });
+        return holdAndEscalate(rc, ticket, { layer: block?.layer ?? "privilege-separation", stage: block?.stage ?? "input", reason: loop.stopReason ?? "a defense stopped the turn" });
       }
       if (loop.outcome !== "replied") {
         logger.warn(`The tool loop ended without a reply (${loop.outcome})`);

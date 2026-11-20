@@ -17,7 +17,7 @@
  * only shows the model its tools when the last message is a user message
  * (see docs/verified-facts.md), so the ticket cannot arrive as a separate
  * tool result. Sharing a message does not lose the provenance: the message
- * is built from `MessagePart`s, each marked, and the input-stage defences
+ * is built from `MessagePart`s, each marked, and the input-stage defenses
  * (spotlighting, the classifier) act on the untrusted parts only.
  *
  * Provenance is never inferred from content. A ticket that says "SYSTEM:

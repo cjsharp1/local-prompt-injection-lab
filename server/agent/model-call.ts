@@ -37,7 +37,7 @@
  * When Show reasoning is on, the response carries `message.thinking`. It
  * gets its own log row and stream event, placed before the decision it
  * led to, so a reader can watch a model talk itself into obeying an
- * injection. It is labelled honestly: reasoning is more generated text,
+ * injection. It is labeled honestly: reasoning is more generated text,
  * not proof of why the model acted.
  */
 

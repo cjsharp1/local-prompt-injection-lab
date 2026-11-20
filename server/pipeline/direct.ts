@@ -1,5 +1,5 @@
 /**
- * direct.ts — the normal shape of one ticket turn, with every defence stage marked.
+ * direct.ts — the normal shape of one ticket turn, with every defense stage marked.
  *
  *   1. Load the ticket — the APP calls get_ticket over MCP, as a support
  *      console would when a ticket is opened. The tool server applies any
@@ -131,7 +131,7 @@ export async function runDirect(request: RunRequest, deps: RunDeps): Promise<Run
 
       if (loop.outcome === "stopped") {
         const block = rc.result.defenseActions.filter((a) => a.decision === "block").at(-1);
-        return holdAndEscalate(rc, ticket, { layer: block?.layer ?? "classifier", stage: block?.stage ?? "input", reason: loop.stopReason ?? "a defence stopped the turn" });
+        return holdAndEscalate(rc, ticket, { layer: block?.layer ?? "classifier", stage: block?.stage ?? "input", reason: loop.stopReason ?? "a defense stopped the turn" });
       }
       if (loop.outcome !== "replied") {
         logger.warn(`The tool loop ended without a reply (${loop.outcome})`);

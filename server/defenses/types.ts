@@ -1,5 +1,5 @@
 /**
- * types.ts — what a defence layer is: one small interface, four hooks.
+ * types.ts — what a defense layer is: one small interface, four hooks.
  *
  * Every layer in this folder is a `DefenseLayer`. It names itself, says
  * how strong it is (soft, medium, hard), lists the pipeline stages it
@@ -81,7 +81,7 @@ export interface DefenseLayer {
   name: string;
   strength: Strength;
   stages: Stage[];
-  /** One honest sentence for the defence panel. */
+  /** One honest sentence for the defense panel. */
   summary: string;
   input?(chunk: UntrustedChunk, ctx: TurnContext): Promise<LayerResult<UntrustedChunk>>;
   systemPrompt?(base: string, ctx: TurnContext): LayerResult<string>;

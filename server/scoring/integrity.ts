@@ -14,7 +14,7 @@
  * how well attacks work, and small models make plenty of mistakes alone.
  *
  * The field only counts in a reply that was DELIVERED. A corrupted reply
- * that a defence withheld never reached the customer.
+ * that a defense withheld never reached the customer.
  */
 
 import type { AttackGoal, ExpectedReply, GoalEvidence } from "../../shared/arena.js";

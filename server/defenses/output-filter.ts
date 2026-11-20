@@ -31,7 +31,7 @@
  *   is withheld all the same. That is a false block, and the arena counts
  *   it.
  *
- *   It is deliberately WEAKER than the scorer, which normalises spacing
+ *   It is deliberately WEAKER than the scorer, which normalizes spacing
  *   and decodes base64. Do not "fix" it to match: the gap is how the lab
  *   shows a filter being bypassed while the scoreboard still catches it.
  *

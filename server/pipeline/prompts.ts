@@ -2,9 +2,9 @@
  * prompts.ts — the fixed words every run starts from.
  *
  * Two pieces of text, and both are part of the experiment: every model,
- * every defence stack and every attack meets exactly these words, and
+ * every defense stack and every attack meets exactly these words, and
  * changing them changes what the arena measures. They are fixed before a
- * run and never tuned afterwards to make a result look better.
+ * run and never tuned afterward to make a result look better.
  *
  *   The base system prompt    the assistant's job, the shop's refund
  *                             policy, and the discount-code canary. This is

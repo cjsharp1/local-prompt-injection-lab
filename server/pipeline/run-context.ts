@@ -5,7 +5,7 @@
  * differ in ONE thing — what the model with tools gets to read — and share
  * everything else: loading the ticket, the session sent with every tool
  * call, the tool stage around each call, the structured reply, the output
- * stage, delivery, the holding message when a defence stops the run, and
+ * stage, delivery, the holding message when a defense stops the run, and
  * the bookkeeping that turns all of it into a RunResult.
  *
  * That shared part lives here, so the two shape files can each be read as
@@ -42,7 +42,7 @@ import type { RunDeps, RunRequest, RunResult } from "./types.js";
 export const APP_ONLY_TOOLS: ReadonlySet<string> = new Set(["get_ticket"]);
 
 /**
- * What the customer receives when a defence stops the run or withholds
+ * What the customer receives when a defense stops the run or withholds
  * the reply. The APP's words, never the model's — a held reply cannot
  * carry what was being held back.
  */
@@ -140,7 +140,7 @@ export function fail(rc: RunContext, message: string, detail?: unknown): RunResu
 export function announce(rc: RunContext, shape: string): void {
   const { request, deps } = rc;
   deps.logger.info(
-    `New run ${rc.runId} · ticket ${request.ticketId} · ${request.model} · defences: ${describeDefenses(request.defenses)} · ${shape}` +
+    `New run ${rc.runId} · ticket ${request.ticketId} · ${request.model} · defenses: ${describeDefenses(request.defenses)} · ${shape}` +
       (request.reasoning ? " · reasoning on" : "") + (request.overlays.length > 0 ? ` · ${request.overlays.length} attack overlay(s)` : ""),
     { request: { ...request, confirmer: request.confirmer ? "set" : "decline by default" }, canaries: rc.canaries.values },
     { actor: "user", because: "a run was started" },
@@ -169,7 +169,7 @@ export async function loadTicket(rc: RunContext): Promise<TicketResult | null> {
   return ticket;
 }
 
-/** The defence stages' context, once the ticket (and so the customer) is known. */
+/** The defense stages' context, once the ticket (and so the customer) is known. */
 export function stageDeps(rc: RunContext, ticket: TicketResult): StageDeps {
   const ctx: TurnContext = {
     runId: rc.runId, model: rc.request.model, canaries: rc.canaries, customerEmail: ticket.from,
@@ -181,7 +181,7 @@ export function stageDeps(rc: RunContext, ticket: TicketResult): StageDeps {
 }
 
 /**
- * A defence stopped the run: the app sends the customer its holding
+ * A defense stopped the run: the app sends the customer its holding
  * message, and the ticket goes to a person. A structured reply, if there
  * was one, stays in the result — withheld, not delivered.
  */
@@ -240,7 +240,7 @@ export async function runToolCall(rc: RunContext, call: RequestedToolCall, stage
   logger.tool(`${call.name} → ${outcome.isError ? "error: " : ""}${truncate(outcome.text, 100)}`,
     { text: outcome.text, isError: outcome.isError, data: outcome.data }, { direction: "back", actor: "tool" });
 
-  // Layer 5's refusals and filters are defence actions, so the scorer can
+  // Layer 5's refusals and filters are defense actions, so the scorer can
   // attribute a block to the layer that made it.
   if (verdict && (verdict.decision === "refused" || verdict.decision === "declined" || verdict.decision === "filtered")) {
     result.defenseActions.push({

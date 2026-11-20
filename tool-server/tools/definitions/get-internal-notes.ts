@@ -19,7 +19,7 @@
  *
  * The text says the notes are internal, as a real console would label
  * them. That label is part of the fixed setup every run shares: it is not
- * a defence layer, and it does not change between stacks.
+ * a defense layer, and it does not change between stacks.
  */
 
 import { z } from "zod";

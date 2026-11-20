@@ -1,5 +1,5 @@
 /**
- * registry.ts — the six defence layers, in pipeline order.
+ * registry.ts — the six defense layers, in pipeline order.
  *
  * The order matters, because the pipeline runs every enabled layer's hook
  * for a stage in this order (pipeline/stages.ts):
@@ -17,7 +17,7 @@
  * it too — and so no layer is credited with a block it did not make.
  *
  * Tool permissions and privilege separation are listed for completeness
- * (the defence panel shows all six); neither has hooks in the app, for the
+ * (the defense panel shows all six); neither has hooks in the app, for the
  * reasons in their own files.
  */
 
@@ -40,7 +40,7 @@ export const MODEL_ORDER: DefenseLayer[] = [hardenedPrompt, spotlighting];
 export const TOOL_ORDER: DefenseLayer[] = [outputFilter];
 export const OUTPUT_ORDER: DefenseLayer[] = [outputFilter];
 
-/** All six, in the order the defence panel lists them. */
+/** All six, in the order the defense panel lists them. */
 export const LAYERS: DefenseLayer[] = [hardenedPrompt, spotlighting, classifier, outputFilter, toolPermissions, privilegeSeparation];
 
 export const LAYER_BY_ID: ReadonlyMap<DefenseId, DefenseLayer> = new Map(LAYERS.map((l) => [l.id, l]));

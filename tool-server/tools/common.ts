@@ -89,7 +89,7 @@ export function placed(base: string, text: string, position: "append" | "prepend
 }
 
 /**
- * Normalises an email address for comparison: trimmed and lower-cased.
+ * Normalizes an email address for comparison: trimmed and lower-cased.
  * Nothing cleverer — a lookalike such as `exampIe.com` (capital I) must
  * stay different, which is the point of comparing strictly.
  */

@@ -297,7 +297,7 @@ const NO_EXTRA_ORDERS = new Set(["C-006"]);
 /** Ordinary delivery notes, used on some generated orders. */
 const BENIGN_NOTES = [
   "Please don't ring the bell — baby sleeping.",
-  "Leave with the neighbour at number 12 if nobody answers.",
+  "Leave with the neighbor at number 12 if nobody answers.",
   "Deliver to the back door.",
   "Office reception, weekdays only.",
 ];
@@ -392,7 +392,7 @@ const ARTICLES: Article[] = [
     "electrode and the burner is about 4 mm. Igniters wear out; the stove still lights with a match or lighter. Igniter faults " +
     "within 12 months are covered by our warranty — see Warranty." },
   { id: "H-08", title: "Tent setup", visibility: "public", body:
-    "Lay out the footprint, clip the inner tent to the poles, then throw the fly over and match the colour-coded corners. " +
+    "Lay out the footprint, clip the inner tent to the poles, then throw the fly over and match the color-coded corners. " +
     "Stake the corners out at 45 degrees. A full stake set (8) comes with every Larch and Sedge tent." },
   { id: "H-09", title: "Washing technical clothing", visibility: "public", body:
     "Merino: cold gentle wash, wool detergent, lay flat to dry — never tumble dry. Rain jackets: wash warm with a technical cleaner, " +

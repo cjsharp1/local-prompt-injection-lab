@@ -47,7 +47,7 @@ export const spotlighting: DefenseLayer = {
   name: "Spotlighting",
   strength: "soft",
   stages: ["input", "model"],
-  summary: "Untrusted text is fenced with per-run secret markers and labelled as data. Still a request to the model.",
+  summary: "Untrusted text is fenced with per-run secret markers and labeled as data. Still a request to the model.",
 
   systemPrompt(base, ctx) {
     const note = [

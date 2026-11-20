@@ -93,7 +93,7 @@ export interface RunResult {
   delivered: boolean;
   /** The tool calls the MODEL asked for, in order. (The app's own calls are not here.) */
   toolCalls: ToolCallRecord[];
-  /** What the defence layers did, in order — the scorer attributes blocks from this. */
+  /** What the defense layers did, in order — the scorer attributes blocks from this. */
   defenseActions: DefenseAction[];
   /** Every attack overlay that landed anywhere in the run. */
   overlaysLanded: string[];
