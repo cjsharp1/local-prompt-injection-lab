@@ -27,6 +27,8 @@ If something happens and the UI doesn't show it, that is a bug.
 
 ![The lab's UI after a run: the Attack studio and defense switches on the left; on the right, the pipeline as a row of steps (a tool call declined by a person, an attack blocked by tool permissions), then the activity log](docs/img/lab-ui.png)
 
+For a walkthrough of the pipeline, the tool server, each defense, the scorer and the UI, with code and screenshots from real runs, see [How it works](docs/how-it-works.html).
+
 ---
 
 > **Not for deployment.** This is built to be read and watched. It has no
@@ -207,7 +209,7 @@ runs the same in the terminal.
 | `npm run try-model` | One raw request to the model, printed in full |
 | `npm run try-tools` | Every tool over MCP with no model: 48 cases, permission and confirmation paths included |
 | `npm run attack -- <id>` | One attack (or `--benign B01`, or `--all`) through the whole pipeline in the terminal (`--stack`, `--model`, `--reasoning`, `--verbose`, `--confirm ask`) |
-| `npm run arena` | The full matrix, resumable; `--quick` for a ten-minute check |
+| `npm run arena` | The full matrix, resumable; `--quick` for a check of about 4 minutes |
 | `npm run arena:report` | Rebuild `docs/arena-results.md` from the JSON |
 | `npm run model-eval` | The benign suite × both models → `docs/model-eval.md` |
 | `npm test` | The scorer tests: near misses, outcome rules, the attack schema |

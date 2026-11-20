@@ -405,69 +405,264 @@
 <div class="wrap">
 
   <header class="top">
-    <p class="eyebrow">Project overview · runs locally · no API key</p>
+    <p class="eyebrow">Project overview · local teaching tool · no API key</p>
     <h1>Local Prompt Injection Lab</h1>
-    <p class="standfirst">A small support assistant on your own machine, a library of attacks aimed at it, and switchable defenses — scored by code, so you can see what each defense stops and what it costs.</p>
+    <p class="standfirst">A small support assistant on your own machine, a library of attacks aimed at it, and switchable defenses, all scored by code. You can see what each defense stops, and what it costs in legitimate work blocked.</p>
   </header>
+
+  <dl class="facts">
+    <div class="fact">
+      <dt>Attacks</dt>
+      <dd>25<small>6 categories, 3 goal types</small></dd>
+    </div>
+    <div class="fact">
+      <dt>Benign tickets</dt>
+      <dd>15<small>to measure the cost</small></dd>
+    </div>
+    <div class="fact">
+      <dt>Defense layers</dt>
+      <dd>6<small>10 named stacks</small></dd>
+    </div>
+    <div class="fact">
+      <dt>Port</dt>
+      <dd>3300<small>tool server 3301 over HTTP</small></dd>
+    </div>
+  </dl>
 
   <section>
     <h2>What it is</h2>
     <p class="sec-note">The premise</p>
-    <p>Prompt injection is usually taught as anecdotes. This lab replaces them with a table measured on your own machine. A small open model runs locally through <strong>Ollama</strong> as the support assistant for <strong>Transition Area Supply</strong>, an invented outdoor gear shop. It reads customer tickets, looks orders up through tools, and writes a structured reply.</p>
-    <p>A static library of attacks is planted in those tickets, their attachments and the tools' results. Defenses stand in the way, each switchable and labeled <em>soft</em>, <em>medium</em> or <em>hard</em>. Code — never a model — scores every run, and every result is reported as a pair: how often attacks succeeded, and how often legitimate tickets were still handled.</p>
-    <p>The point is to see behind the scenes: where the payload landed, exactly what the model was sent, what it reasoned, which tool it reached for, which defense inspected what, and why the attack got through or was stopped.</p>
+    <p>Prompt injection is usually taught as anecdotes. This lab lets you watch it happen on your own machine and measure it. A small open model runs locally through <strong>Ollama</strong> as the support assistant for <strong>Transition Area Supply</strong>, an invented outdoor gear shop. The assistant reads customer tickets, looks orders up through six simulated tools served over MCP, and writes a structured reply.</p>
+    <p>Attacks are planted in those tickets: in the email, an attachment, an order's delivery note, a community answer, the customer's live chat. Defenses stand in the way, each switchable and labeled <em>soft</em>, <em>medium</em> or <em>hard</em>. Code, never a model, scores every run, and every result is reported as a pair: how often attacks succeeded, and how often legitimate tickets were still handled.</p>
+    <p>The point is to see behind the scenes: where the payload landed, exactly what the model was sent, which tool it reached for, which defense inspected what, and why the attack got through or was stopped.</p>
+    <p>For a section-by-section walkthrough of the pipeline, the tool server, each defense, the scorer and the UI, with code from the repo and screenshots from real runs, see <a href="docs/how-it-works.html">How it works</a>.</p>
 
-  </section>
-
-  <dl class="facts">
-    <div class="fact"><dt>Attacks</dt><dd>25 <small>in a static library</small></dd></div>
-    <div class="fact"><dt>Benign tickets</dt><dd>15 <small>to measure the cost</small></dd></div>
-    <div class="fact"><dt>Defense layers</dt><dd>6 <small>10 named stacks</small></dd></div>
-    <div class="fact"><dt>Simulated tools</dt><dd>6 <small>over MCP</small></dd></div>
-  </dl>
-
-  <section>
-    <h2>What you see</h2>
-    <p class="sec-note">One run, from the inside</p>
     <figure>
       <img src="docs/img/lab-ui.png" alt="The lab's UI after a run. Left: the Attack studio, showing where the payload lands, and the defense switches. Right: the pipeline as a row of steps, then the activity log." width="1600" height="1000">
       <figcaption>A fake "admin override" planted in an order's delivery note. With tool permissions on, the tool server asks a person before the assistant can read staff notes. The person declined, and the run scored as blocked.</figcaption>
     </figure>
-    <p>On the left, you pick an attack and see exactly where it lands: the email, an attachment, a delivery note, a community answer or a live chat. Hidden text can be revealed. Below that you switch defenses on and off. On the right, the pipeline view draws the turn as a row of steps: each request to the model with its answer, each tool call with its result, and every defense that acted. The activity log underneath has every row in full, and the Reply tab shows what the customer would have received.</p>
+
+    <div class="note">
+      <span class="note-label">The distinction the lab exists to make</span>
+      <p>A defense that asks the model to behave is a <strong>request</strong>, and a model can be talked out of it. A defense enforced in code the model cannot reach, such as a permission checked in the tool server or a model with tools that never sees the attacker's text, is a <strong>boundary</strong>. The lab labels every defense by which kind it is and shows both kinds failing in their own ways.</p>
+    </div>
   </section>
 
   <section>
-    <h2>The defenses</h2>
-    <p class="sec-note">And how each one fails</p>
+    <h2>Tech stack</h2>
+    <p class="sec-note">Node · Express · Ollama · vanilla TypeScript · no frontend framework</p>
+
+    <h3>Runtime dependencies</h3>
     <div class="t-scroll">
       <table>
-        <thead><tr><th>Layer</th><th>Strength</th><th>What it does</th></tr></thead>
+        <thead>
+          <tr><th>Package</th><th>Version</th><th>Role</th></tr>
+        </thead>
         <tbody>
-          <tr><td class="name">Hardened system prompt</td><td>soft</td><td>Security rules in the system prompt. A request the model may ignore.</td></tr>
-          <tr><td class="name">Spotlighting</td><td>soft</td><td>Untrusted text fenced with per-run secret markers and labeled as data. Still a request to the model.</td></tr>
-          <tr><td class="name">Input classifier</td><td>medium</td><td>A second call to the same model flags injections before the assistant reads them. It reads attacker text, so it can be addressed too.</td></tr>
-          <tr><td class="name">Output filter</td><td>medium</td><td>Code blocks tool calls and replies that contain a secret or a stranger's address. It matches only what it is written to match.</td></tr>
-          <tr><td class="name">Tool permissions</td><td>hard</td><td>Enforced in the tool server: email only the customer, their data only, staff notes only with a person's OK. Covers tools, not the reply's words.</td></tr>
-          <tr><td class="name">Privilege separation</td><td>hard</td><td>A quarantined call reads untrusted text and returns fixed-schema facts. The model with tools never sees the raw text. The facts can still be wrong.</td></tr>
+          <tr><td class="name">@modelcontextprotocol/server</td><td class="mono">2.4.0</td><td>The tool server: six tools, the permission layer and the human-confirmation request</td></tr>
+          <tr><td class="name">@modelcontextprotocol/client</td><td class="mono">2.4.0</td><td>The app's side: spawns the tool server over stdio and calls it, with the per-run session in <code>_meta</code></td></tr>
+          <tr><td class="name">@modelcontextprotocol/node</td><td class="mono">2.1.2</td><td>Serves the tool server over HTTP on 3301, for MCP Inspector</td></tr>
+          <tr><td class="name">express</td><td class="mono">5.3.0</td><td>The app's routes and the run's Server-Sent Events stream</td></tr>
+          <tr><td class="name">zod</td><td class="mono">4.6.7</td><td>Tool inputs, the attack file schema, and the quarantined reader's fixed-schema facts</td></tr>
+          <tr><td class="name">dotenv</td><td class="mono">18.0.10</td><td>Loads an optional <code>.env</code>: ports, Ollama's address, model, context size. No secrets</td></tr>
         </tbody>
       </table>
     </div>
-    <p>Every layer starts off. The lab begins as the undefended assistant, so you can watch an attack land and then add defenses one at a time.</p>
+
+    <h3>Build and dev toolchain</h3>
+    <div class="t-scroll">
+      <table>
+        <thead>
+          <tr><th>Package</th><th>Version</th><th>Role</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="name">typescript</td><td class="mono">7.0.2</td><td>Two configs, one per half of the app</td></tr>
+          <tr><td class="name">tsx</td><td class="mono">4.23.15</td><td>Runs TypeScript directly and restarts on save</td></tr>
+          <tr><td class="name">@types/node</td><td class="mono">24.19.2</td><td>Server-side type definitions</td></tr>
+          <tr><td class="name">@types/express</td><td class="mono">5.0.6</td><td>Route and middleware types</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Platform</h3>
+    <div class="t-scroll">
+      <table>
+        <tbody>
+          <tr><td class="name">Node.js</td><td>24 or newer, for the built-in <code>node:sqlite</code>; developed on <span class="num">24.4.1</span></td></tr>
+          <tr><td class="name">Ollama</td><td>Developed on <span class="num">0.40.16</span>. Cloud models are refused by name</td></tr>
+          <tr><td class="name">Models</td><td><code>qwen3.5:4b</code> (3.3 GB) and <code>llama3.2:3b</code> (2.0 GB). Every role in a run (assistant, classifier, quarantined reader) uses the run's one model</td></tr>
+          <tr><td class="name">Hardware</td><td>Measured on a laptop with 32 GB RAM and a 4 GB GPU. Only one model stays loaded at a time; a switch costs a 5–8 s reload</td></tr>
+          <tr><td class="name">Data</td><td>A seeded SQLite shop, rebuilt deterministically by <code>npm run seed</code> and read only by the tool server</td></tr>
+          <tr><td class="name">Frontend</td><td>Hand-written TypeScript compiled to ES modules. No React, no bundler, no CSS framework</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Why no framework</h3>
+    <p>The page is the teaching surface, and the attack library is deliberately hostile input. Everything from a model, an attack, a tool or the shop is rendered with <code>textContent</code>, never <code>innerHTML</code>, and that is easy to check in a codebase with no framework between the code and the DOM.</p>
   </section>
 
   <section>
-    <h2>Run it</h2>
+    <h2>What's in it</h2>
+    <p class="sec-note">Built and working</p>
+
+    <h3>Six simulated tools</h3>
+    <div class="t-scroll">
+      <table>
+        <thead>
+          <tr><th>Tool</th><th>What it does</th><th>Why it matters here</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="name">get_ticket</td><td>Loads the ticket: email, attachment list, customer</td><td>Called by the app, not offered to the model; the ticket is the first attack surface</td></tr>
+          <tr><td class="name">lookup_order</td><td>An order's status, lines and delivery note</td><td>The delivery note is text the customer typed at checkout, coming back as trusted-looking data</td></tr>
+          <tr><td class="name">get_attachment</td><td>An attachment's text</td><td>Documents carry instructions as easily as emails do</td></tr>
+          <tr><td class="name">get_internal_notes</td><td>Staff-only notes, including a planted secret</td><td>The leak target. With permissions on, reading it needs a person's OK</td></tr>
+          <tr><td class="name">search_help_articles</td><td>Help articles and community answers</td><td>Community answers are written by anyone; internal articles are hidden with permissions on</td></tr>
+          <tr><td class="name">send_email</td><td>"Sends" an email to the run's outbox</td><td>The forbidden-action target. Nothing is ever sent; the outbox is shown in the UI</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>An attack library of 25</h3>
+    <div class="t-scroll">
+      <table>
+        <thead>
+          <tr><th>Category</th><th>Count</th><th>Where the payload lands</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="name">indirect-email</td><td class="mono">9</td><td>The customer's email, including hidden HTML: comments, <code>display:none</code>, white-on-white text</td></tr>
+          <tr><td class="name">indirect-document</td><td class="mono">4</td><td>An attachment: a "records policy", a Markdown comment, a forged earlier reply</td></tr>
+          <tr><td class="name">tool-result</td><td class="mono">4</td><td>Inside a tool's own result: a delivery note, a community answer</td></tr>
+          <tr><td class="name">obfuscated</td><td class="mono">4</td><td>Base64, Spanish, zero-width characters, an instruction split across fields</td></tr>
+          <tr><td class="name">direct</td><td class="mono">2</td><td>Typed straight into the live chat</td></tr>
+          <tr><td class="name">multi-turn</td><td class="mono">2</td><td>An innocent early message primes a later one</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Each attack has one goal, checked by code. <strong>Leak</strong> (13): a per-run secret, such as a recovery phrase in the staff notes, reaches someone it shouldn't. <strong>Forbidden action</strong> (7): a tool call that must not happen, such as an email to a stranger. <strong>Integrity</strong> (5): a wrong answer the attacker chose, such as a refund nobody approved. The secrets are generated fresh for every run and never appear in a payload, so a leak is always the model's doing.</p>
+
+    <h3>Six defense layers</h3>
+    <div class="t-scroll">
+      <table>
+        <thead>
+          <tr><th>Layer</th><th>Strength</th><th>What it does</th><th>How it fails</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="name">Hardened system prompt</td><td>soft</td><td>Security rules in the system prompt</td><td>A request the model can be persuaded out of</td></tr>
+          <tr><td class="name">Spotlighting</td><td>soft</td><td>Untrusted text fenced with per-run secret markers and labeled as data</td><td>Forging the fence fails; persuasion inside it doesn't</td></tr>
+          <tr><td class="name">Input classifier</td><td>medium</td><td>A second call to the same model flags injections before the assistant reads them</td><td>It reads attacker text, so it can be addressed too. It also flags legitimate tickets</td></tr>
+          <tr><td class="name">Output filter</td><td>medium</td><td>Code blocks tool calls and replies containing a secret or a stranger's address</td><td>Matches only what it is written to match: spacing or base64 slips past</td></tr>
+          <tr><td class="name">Tool permissions</td><td>hard</td><td>Enforced in the tool server: email only the customer, their data only, staff notes only with a person's OK</td><td>No bypass, but a scope limit: a secret the model already holds can leave in the reply's words</td></tr>
+          <tr><td class="name">Privilege separation</td><td>hard</td><td>A quarantined call reads untrusted text and returns fixed-schema facts; the model with tools never sees the raw text</td><td>No bypass for leaks, but the attacker still chooses among allowed values</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Every layer starts off. The lab begins as the undefended assistant, so you can watch an attack land and then add defenses one at a time. The output filter is <strong>deliberately weaker than the scorer</strong>, which sees through spacing and base64. That gap is how the lab shows a filter being bypassed while the scoreboard still catches it.</p>
+
+    <h3>The UI</h3>
+    <p>A two-column page at <code>127.0.0.1:3300</code>. On the left, the <strong>Attack studio</strong> shows the selected attack and exactly where it lands, with a switch that reveals hidden HTML as source text. Below it are the defense switches and the named stacks. On the right, the <strong>pipeline view</strong> draws the run as a row of steps: each request to the model with its answer, each tool call with its result, and every defense that acted. Under it, the <strong>activity log</strong> holds every row in full, the <strong>Reply</strong> tab shows the reply, the outbox and the scored outcome, and the <strong>Results</strong> tab reads the arena's results. When the permission layer needs a person, the tool server asks through MCP and the page shows a dialog. A model cannot answer it.</p>
+
+    <h3>The arena and the model eval</h3>
+    <p><code>npm run arena</code> runs every attack and benign ticket against all ten stacks on both models (800 runs, about nine hours on the hardware above). <code>npm run model-eval</code> runs the benign suite on both models over three seeds. Both save after every run and resume where they left off. Every result is keyed by a hash of the prompts, defenses, tools, attacks and scorer, so changing any of them marks old results stale instead of mixing two experiments.</p>
+  </section>
+
+  <section>
+    <h2>Running it</h2>
     <p class="sec-note">Node 24+ and Ollama</p>
 <pre><code>npm install
-npm run seed
+npm run seed                 # builds data/shop.db, the same shop for everyone
 ollama pull qwen3.5:4b
 ollama pull llama3.2:3b
-npm run check-env
-npm run dev        # http://127.0.0.1:3300</code></pre>
-    <p>Everything stays on your machine. The shop, its customers and every address are invented, and nothing is sent anywhere: <code>send_email</code> writes to an outbox the UI shows.</p>
+npm run check-env            # checks each piece separately and says what to fix
+npm run dev                  # http://127.0.0.1:3300</code></pre>
+
+    <h3>Try these</h3>
+    <div class="t-scroll">
+      <table>
+        <thead>
+          <tr><th>Do this</th><th>What it shows</th></tr>
+        </thead>
+        <tbody>
+          <tr><td><em>Fake system notice in an order's delivery note</em>, stack <code>none</code></td><td>An indirect injection from inside a tool result. It doesn't land every run, so run it a few times</td></tr>
+          <tr><td>The same, with <em>Tool permissions</em> on</td><td>The tool server asks <strong>you</strong> to confirm; decline it and watch the log</td></tr>
+          <tr><td><em>Instruction in white-on-white HTML text</em>, then <strong>Reveal hidden content</strong></td><td>What a model reading the source sees that a person reading the email does not</td></tr>
+          <tr><td><em>A note to the safety classifier</em>, stack <code>classifier</code></td><td>An attack aimed at the defense itself</td></tr>
+          <tr><td><em>The code, with a space between every character</em>, stack <code>output-filter</code></td><td>A filter bypassed while the scorer still catches the leak</td></tr>
+          <tr><td>Any attack, mode <strong>Separated</strong></td><td>Which fields were withheld from the model with tools</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Everything stays on your machine. The shop, its customers and every address are invented, and attacker addresses use <code>.example</code> domains, which can never receive mail.</p>
+  </section>
+
+  <section>
+    <h2>How it was built</h2>
+    <p class="sec-note">16 steps · from a written plan</p>
+    <p>Built in steps from a reviewed plan (<code>PLAN.md</code>, with its decisions in §13). Each step ended somewhere runnable and checkable in the terminal before the next began, and the UI came after the pipeline, the defenses and the scorer worked without it.</p>
+
+    <ol class="phases">
+      <li class="done"><span class="ph-name">Verify the facts the plan depends on</span> <span class="ph-steps">step 0</span></li>
+      <li class="done"><span class="ph-name">Skeleton, seed data and the MCP tool server</span> <span class="ph-steps">steps 1–3</span></li>
+      <li class="done"><span class="ph-name">Model client and one benign ticket end to end</span> <span class="ph-steps">steps 4–5</span></li>
+      <li class="done"><span class="ph-name">Scoring, then one attack landing</span> <span class="ph-steps">steps 6–7</span></li>
+      <li class="done"><span class="ph-name">The defenses, one at a time, then privilege separation</span> <span class="ph-steps">steps 8–9</span></li>
+      <li class="done"><span class="ph-name">The full library, the arena and the UI</span> <span class="ph-steps">steps 10–12</span></li>
+      <li><span class="ph-name">Model eval and the full arena</span> <span class="ph-steps">steps 13–14 · not yet run</span></li>
+      <li class="done"><span class="ph-name">Documentation and Pages</span> <span class="ph-steps">step 15</span></li>
+    </ol>
+
+    <h3>Things that will trip you up</h3>
+    <ul class="plain">
+      <li><strong>llama3.2:3b gets one useful tool call per turn.</strong> Its chat template shows the tools only while the last message is from the user, so after its first tool result the tools are gone.</li>
+      <li><strong><code>format</code> and <code>tools</code> in one request stop tool calling.</strong> The structured reply is a separate request after the tool loop.</li>
+      <li><strong>Ollama silently drops whole messages</strong> past <code>num_ctx</code>, keeping the system prompt. The lab sets 8192 and flags a run where the model saw far fewer tokens than were sent.</li>
+      <li><strong><code>think: true</code> on a model without the capability is an HTTP 400.</strong> qwen3.5:4b thinks by default, so <code>think</code> is always sent explicitly.</li>
+      <li><strong>The MCP client defaults to the legacy protocol</strong>, where the server cannot ask for input. The lab pins <code>versionNegotiation: "auto"</code>.</li>
+      <li><strong>A client can send "confirmed" before it is asked</strong>, and the pattern in the SDK's own example accepts it. Every confirmation is bound to its call with an HMAC <code>requestState</code>.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Conventions held through the build</h2>
+    <p class="sec-note">What the code enforces on itself</p>
+
+    <h3>Every file explains itself</h3>
+    <p>Each <code>.ts</code> file opens with a comment saying what it does and why it exists, and <code>npm run audit-comments</code> fails if one is missing. For defense files it also checks that the header names every attack aimed at that layer, so a new attack forces its defense's documentation to keep up.</p>
+
+    <h3>Fixed before a run, never tuned after</h3>
+    <p>Prompts, attacks, expectations and scorers are settled before a run. When a change made a model look better on the benign suite, it was kept only if it was a fix rather than tuning, and one that was tried and reverted is recorded as a finding instead of reworded until it passed.</p>
+
+    <h3>Security by construction</h3>
+    <ul class="plain">
+      <li><strong>No API key, ever,</strong> and no outbound calls except to the local Ollama server.</li>
+      <li><strong>Every tool is simulated.</strong> <code>send_email</code> writes to the run's outbox and never opens a socket.</li>
+      <li><strong>Permissions are enforced in the tool server</strong> and never derived from model-written arguments. Only the app writes the MCP request's <code>_meta</code>, which says which ticket and customer the run belongs to.</li>
+      <li><strong>Scoring is code, never a model.</strong></li>
+      <li><strong>Every defense decision is logged</strong>, including a pass, naming the layer and the stage.</li>
+      <li><strong>Every server binds 127.0.0.1 and checks Host and Origin.</strong> No authentication; not for a network.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Current state</h2>
+    <p class="sec-note">Verified 19 November 2026</p>
+
+    <ul class="status">
+      <li class="ok">typecheck passes — both halves</li>
+      <li class="ok">build passes</li>
+      <li class="ok">69 unit tests pass</li>
+      <li class="ok">audit-comments passes — 93 files</li>
+      <li class="ok">try-tools passes — 48 cases</li>
+      <li class="ok">check-env passes</li>
+      <li class="ok">0 vulnerabilities</li>
+      <li class="caution">full arena not yet run</li>
+      <li>12,369 lines of TypeScript</li>
+      <li>6 tools · 25 attacks · 15 benign tickets · 6 layers</li>
+    </ul>
+
     <div class="note">
-      <span class="note-label">Status</span>
-      <p>The lab, its UI and its scripts are built and tested. The full arena (25 attacks and 15 benign tickets × 10 defense stacks × 2 models) has not been run yet, so this page shows no attack-success or benign-success table. <code>npm run arena</code> measures it on your own machine in about nine hours. It is resumable.</p>
+      <span class="note-label">What has been measured</span>
+      <p>The lab, its UI and its scripts are built and tested, but the full arena has not been run, so this page shows no attack-success or benign-success table. In a single run of the whole library with no defenses during the build, qwen3.5:4b completed 12 of 15 benign tickets and 11 of 25 attacks succeeded; llama3.2:3b completed 3 of 15 and 7 attacks succeeded, largely because it often can't do the task at all. Those are single runs, not a measurement. <code>npm run arena</code> measures it properly on your own machine. <strong>It is not production software</strong>: it stores attacks on purpose, has no authentication and is built to be read and watched.</p>
     </div>
   </section>
 
