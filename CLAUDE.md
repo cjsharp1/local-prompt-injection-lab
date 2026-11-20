@@ -130,7 +130,7 @@ That separation is what makes layer 5 hard.
 - **Scoring is code, never a model.** No LLM judges anything that
   reaches a results file.
 - **Prompts, attacks, expectations and scorers are fixed before a run
-  and never tuned afterward** to improve a result. The arena's library
+  and never tuned afterward** to improve a result. The arena's setup
   hash marks old records stale when any of them change. Do not work
   around it.
 - **Defenses are switchable, labeled soft, medium or hard, and never
@@ -161,7 +161,8 @@ That separation is what makes layer 5 hard.
   request.
 - **In privilege-separation mode, the model that can call tools never
   receives raw untrusted text.** Tool results reach it only through
-  each tool's `trustedFields` projection, defined in code.
+  the per-tool projection in `server/pipeline/projection.ts`, defined in
+  code.
 - **Every server binds 127.0.0.1 and checks Host and Origin.**
 - **`stdio.ts` never writes to stdout.** stdout is the protocol there.
 - **The MCP serving entry points take a factory**, not a server
@@ -199,7 +200,7 @@ to re-confirm in step 0:
   heuristic, labeled as one, and never executed.
 - **The two models can't share a 4 GB GPU.** Every role (classifier,
   quarantine, main loop) uses the run's one model; a swap costs a
-  6–10 s cold load.
+  5–8 s reload (measured 5.3–7.8 s).
 - `node:sqlite` does not bind `?1` positionally; use `:named` params.
 - `StdioClientTransport` is in `@modelcontextprotocol/client/stdio`.
 - **Confirmations use `inputRequired(...)`**, and the 2.4 client
@@ -257,5 +258,10 @@ from `main`. It is a complete HTML document (doctype, `<html lang>`,
 `<meta charset="utf-8">`) and self-contained. Without the doctype,
 Pages renders it in quirks mode; without the charset, em-dashes become
 mojibake.
+
+`docs/how-it-works.html` is the walkthrough linked from it, with the
+same stylesheet. Its code excerpts are copied from the repo and its
+screenshots (`docs/img/`) come from real runs. When code it quotes
+changes, update the excerpt in the same change.
 
 Commits: plain imperative, descriptive, no prefixes.

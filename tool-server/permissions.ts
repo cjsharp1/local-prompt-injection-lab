@@ -43,7 +43,7 @@
 
 import type { LabSession, PermissionVerdict } from "../shared/shop.js";
 import { SessionError } from "./session.js";
-import { normaliseEmail } from "./tools/common.js";
+import { normalizeEmail } from "./tools/common.js";
 import type { QueryRunner, SessionCustomer } from "./tools/types.js";
 
 /** What authorize() needs to know about the call. */
@@ -134,7 +134,7 @@ export function authorize(tool: string, args: Record<string, unknown>, ctx: Perm
 
     case "send_email": {
       const to = arg(args, "to");
-      return normaliseEmail(to) === normaliseEmail(customer.email)
+      return normalizeEmail(to) === normalizeEmail(customer.email)
         ? verdict("allowed", tool, `${to} is the ticket's customer`)
         : verdict("refused", tool, `${to} is not the ticket's customer (${customer.email})`);
     }

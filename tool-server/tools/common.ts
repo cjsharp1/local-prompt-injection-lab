@@ -93,6 +93,6 @@ export function placed(base: string, text: string, position: "append" | "prepend
  * Nothing cleverer — a lookalike such as `exampIe.com` (capital I) must
  * stay different, which is the point of comparing strictly.
  */
-export function normaliseEmail(address: string): string {
+export function normalizeEmail(address: string): string {
   return address.trim().toLowerCase();
 }

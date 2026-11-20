@@ -98,7 +98,7 @@ export interface ChatRequest {
   model: string;
   messages: OllamaMessage[];
   tools?: OllamaTool[];
-  /** A JSON Schema the reply must match. Suppresses tool calls — see reply-format.ts. */
+  /** A JSON Schema the reply must match. Suppresses tool calls — see server/agent/reply.ts. */
   format?: Record<string, unknown>;
   think: boolean;
   stream: false;

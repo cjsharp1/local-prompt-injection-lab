@@ -4,7 +4,7 @@
  * Run it with:  npm run arena                              (the default matrix)
  *               npm run arena -- --models llama3.2:3b      (one model — a night's half)
  *               npm run arena -- --seeds 2,3 --stacks none,everything   (the variance pass)
- *               npm run arena -- --quick                   (~10 minutes; a scratch file)
+ *               npm run arena -- --quick                   (about 4 minutes; a scratch file)
  *               npm run arena -- --report-only             (rebuild the markdown)
  *
  * Every run goes through the real pipeline (`runTicket`), the real tool

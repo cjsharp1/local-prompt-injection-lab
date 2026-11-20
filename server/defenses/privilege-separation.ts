@@ -37,8 +37,10 @@
  *   its scope limit through the facts the quarantined reader is allowed to
  *   report.
  *
- * Built at build step 9. Until then, a run asking for it uses the direct
- * pipeline and says so in its first log rows.
+ * The work itself happens in the separated pipeline shape:
+ * server/pipeline/separated.ts runs the quarantined reader
+ * (quarantine.ts) and projects every tool result (projection.ts). This
+ * file is the layer's entry in the defense panel and the registry.
  */
 
 import type { DefenseLayer } from "./types.js";
