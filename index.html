@@ -349,6 +349,12 @@
     color: var(--warn);
   }
 
+  figure { margin: 0 0 1rem; }
+  figure img { display: block; width: 100%; height: auto; border: 1px solid var(--rule); border-radius: 6px; }
+  figcaption { font-size: 0.85rem; color: var(--fg-dim); margin-top: 0.4rem; }
+  pre { background: var(--surface-sunk); border: 1px solid var(--rule); border-radius: 6px; padding: 0.8rem 1rem; overflow-x: auto; font-size: 0.85rem; }
+  pre code { background: none; padding: 0; }
+
   footer {
     margin-top: 3rem;
     padding-top: 1.25rem;
@@ -399,7 +405,7 @@
 <div class="wrap">
 
   <header class="top">
-    <p class="eyebrow">Project overview · runs locally · no API key · under construction</p>
+    <p class="eyebrow">Project overview · runs locally · no API key</p>
     <h1>Local Prompt Injection Lab</h1>
     <p class="standfirst">A small support assistant on your own machine, a library of attacks aimed at it, and switchable defenses — scored by code, so you can see what each defense stops and what it costs.</p>
   </header>
@@ -411,9 +417,57 @@
     <p>A static library of attacks is planted in those tickets, their attachments and the tools' results. Defenses stand in the way, each switchable and labeled <em>soft</em>, <em>medium</em> or <em>hard</em>. Code — never a model — scores every run, and every result is reported as a pair: how often attacks succeeded, and how often legitimate tickets were still handled.</p>
     <p>The point is to see behind the scenes: where the payload landed, exactly what the model was sent, what it reasoned, which tool it reached for, which defense inspected what, and why the attack got through or was stopped.</p>
 
+  </section>
+
+  <dl class="facts">
+    <div class="fact"><dt>Attacks</dt><dd>25 <small>in a static library</small></dd></div>
+    <div class="fact"><dt>Benign tickets</dt><dd>15 <small>to measure the cost</small></dd></div>
+    <div class="fact"><dt>Defense layers</dt><dd>6 <small>10 named stacks</small></dd></div>
+    <div class="fact"><dt>Simulated tools</dt><dd>6 <small>over MCP</small></dd></div>
+  </dl>
+
+  <section>
+    <h2>What you see</h2>
+    <p class="sec-note">One run, from the inside</p>
+    <figure>
+      <img src="docs/img/lab-ui.png" alt="The lab's UI after a run. Left: the Attack studio, showing where the payload lands, and the defense switches. Right: the pipeline as a row of steps, then the activity log." width="1600" height="1000">
+      <figcaption>A fake "admin override" planted in an order's delivery note. With tool permissions on, the tool server asks a person before the assistant can read staff notes. The person declined, and the run scored as blocked.</figcaption>
+    </figure>
+    <p>On the left, you pick an attack and see exactly where it lands: the email, an attachment, a delivery note, a community answer or a live chat. Hidden text can be revealed. Below that you switch defenses on and off. On the right, the pipeline view draws the turn as a row of steps: each request to the model with its answer, each tool call with its result, and every defense that acted. The activity log underneath has every row in full, and the Reply tab shows what the customer would have received.</p>
+  </section>
+
+  <section>
+    <h2>The defenses</h2>
+    <p class="sec-note">And how each one fails</p>
+    <div class="t-scroll">
+      <table>
+        <thead><tr><th>Layer</th><th>Strength</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td class="name">Hardened system prompt</td><td>soft</td><td>Security rules in the system prompt. A request the model may ignore.</td></tr>
+          <tr><td class="name">Spotlighting</td><td>soft</td><td>Untrusted text fenced with per-run secret markers and labeled as data. Still a request to the model.</td></tr>
+          <tr><td class="name">Input classifier</td><td>medium</td><td>A second call to the same model flags injections before the assistant reads them. It reads attacker text, so it can be addressed too.</td></tr>
+          <tr><td class="name">Output filter</td><td>medium</td><td>Code blocks tool calls and replies that contain a secret or a stranger's address. It matches only what it is written to match.</td></tr>
+          <tr><td class="name">Tool permissions</td><td>hard</td><td>Enforced in the tool server: email only the customer, their data only, staff notes only with a person's OK. Covers tools, not the reply's words.</td></tr>
+          <tr><td class="name">Privilege separation</td><td>hard</td><td>A quarantined call reads untrusted text and returns fixed-schema facts. The model with tools never sees the raw text. The facts can still be wrong.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Every layer starts off. The lab begins as the undefended assistant, so you can watch an attack land and then add defenses one at a time.</p>
+  </section>
+
+  <section>
+    <h2>Run it</h2>
+    <p class="sec-note">Node 24+ and Ollama</p>
+<pre><code>npm install
+npm run seed
+ollama pull qwen3.5:4b
+ollama pull llama3.2:3b
+npm run check-env
+npm run dev        # http://127.0.0.1:3300</code></pre>
+    <p>Everything stays on your machine. The shop, its customers and every address are invented, and nothing is sent anywhere: <code>send_email</code> writes to an outbox the UI shows.</p>
     <div class="note">
       <span class="note-label">Status</span>
-      <p>The plan is approved and the build has started. Nothing on this page is a measured result yet; the figures — attack success, benign success, run times — will be filled in from the lab's own generated results once they exist, and not before.</p>
+      <p>The lab, its UI and its scripts are built and tested. The full arena (25 attacks and 15 benign tickets × 10 defense stacks × 2 models) has not been run yet, so this page shows no attack-success or benign-success table. <code>npm run arena</code> measures it on your own machine in about nine hours. It is resumable.</p>
     </div>
   </section>
 

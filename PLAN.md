@@ -3,19 +3,20 @@
 A local teaching lab that attacks a small support assistant with prompt
 injections and measures what each defense buys, and what it costs.
 
-Status: **reviewed; decisions answered 2026-11-19 (§13); step 0 done** (`docs/verified-facts.md`). Nothing is
-built yet. Step 1 (skeleton) is next.
+Status: **reviewed; decisions answered 2026-11-19 (§13); built.** The
+lab, its UI and its scripts are done and tested. The full arena has not
+been run yet; `docs/verified-facts.md` records what was measured during
+the build. Sections below were written before the build and corrected
+where a step proved them wrong.
 
 Conventions in this document:
 
-- "The sibling" means local-ai-data-lab, the closest reference repo.
-  The other references are "the chat lab" and "the MCP lab". The plan
-  names them because reuse has to be traceable. The finished repo's code,
-  comments and docs will not mention them (§13, decision 1).
+- "Measured earlier" marks a fact carried over from earlier measurement
+  on this machine, before this lab existed, and re-confirmed in step 0
+  where it mattered.
 - A number marked **estimate** has not been measured on this machine.
   Every estimate is re-measured at the build step named beside it, and
-  the plan is corrected where it was wrong, as the sibling's
-  verified-facts did.
+  the plan is corrected where it was wrong.
 
 ---
 
@@ -90,82 +91,31 @@ this repo worse, even when the code itself is better.
 
 ---
 
-## 2. What is reused, and where this lab differs
+## 2. Design choices worth knowing
 
-The sibling is the main template. "Copy" means the file is copied
-wholesale with only names changed. "Adapt" means its approach and most
-of its code carry over, with the changes listed. The README and
-index.html get one line noting files copied unchanged. Code comments
-won't name the source (standalone rule).
+Most of the architecture is conventional for a small local AI app: a
+two-halves TypeScript project (`shared/types.ts` is the wire contract,
+and the browser can't import server code), an MCP tool server spawned
+over stdio with serving entry points that take a factory, Host and
+Origin guards on every server, a logger the pipeline writes to instead
+of an HTTP response, and a comment convention enforced by
+`scripts/audit-comments.ts`. "Everything crossing the MCP boundary is
+untrusted" is one of the lab's subjects, demonstrated by attack rather
+than stated. The choices below are the ones specific to this lab.
 
-### From local-ai-data-lab (the sibling)
-
-| Sibling file | Here | How |
-|---|---|---|
-| `scripts/audit-comments.ts` | `scripts/audit-comments.ts` | **Copy.** Add `tool-server/`, `attacks/` (no `.ts` there, so a no-op) and `test/` to the folders it walks |
-| `public/json-tree.ts` | `public/json-tree.ts` | **Copy.** Emits `jt-*` classes; the stylesheet must keep them |
-| `server/model/ollama.ts` | `server/model/ollama.ts` | **Adapt.** Same `buildRequest` (think, stream:false, num_ctx always sent), same remote-model refusal and error classes. Add: `digest` and `capabilities` in `listModels()`, needed for the results header and the reasoning switch. Error wording says "ticket data" instead of "customer data" |
-| `server/logger.ts` | `server/logger.ts` | **Adapt.** Same sink indirection. Adds the `defense` level and a `stage` field (§3.4) |
-| `server/agent/tool-format.ts` | `server/agent/tool-format.ts` | **Copy** (MCP tool → Ollama function) |
-| `server/agent/loop.ts` | `server/agent/loop.ts` + `server/pipeline/*` | **Adapt.** Kept: `ToolSource`, Logger + emit (never an HTTP response), and every small-model failure check (text tool call heuristic, same call twice, iteration cap, dropped-history detector with its 60% ratio and the reason for it). Changed: defense stages become explicit pipeline hooks (§7) instead of inline layer code |
-| `server/guardrails/reply-format.ts` | `server/agent/reply.ts` | **Adapt.** The separate format request after the tool loop, for the same measured reason. New schema (§4.3) |
-| `server/guardrails/settings.ts` | `server/defenses/settings.ts` | **Adapt.** Parse-with-defaults, describe-for-log. Defaults differ: here every layer defaults to **off**, because the lab starts from the undefended app (§13, decision 9) |
-| `server/mcp/client.ts` | `server/mcp/client.ts` | **Adapt.** Same spawn logic (own file extension picks `tsx` or `dist/`, `process.execPath`, stderr → log rows, lazy reconnect). Adds the per-call session `_meta` (§3.3) and the confirmation round trip (§7.5) |
-| `data-server/db.ts` | `tool-server/db.ts` | **Copy** with path and name changes (read-only `node:sqlite`, `:named` params, query recorder) |
-| `data-server/tools/types.ts`, `registry.ts`, `mcp-server.ts`, `stdio.ts`, `http.ts` | same names under `tool-server/` | **Adapt.** Same dependency order and factory rule. `run()` gets a `ToolContext` (session, permissions, outbox) besides the `QueryRunner` |
-| `data-server/tools/common.ts` | `tool-server/tools/common.ts` | **Adapt.** Only the lenient id and number helpers this lab's six tools need |
-| `scripts/seed.ts` | `scripts/seed.ts` | **Adapt.** Same deterministic PRNG and dates shifted relative to today, with a much smaller shop |
-| `scripts/check-env.ts`, `try-model.ts`, `try-tools.ts`, `copy-data.ts` | same | **Adapt.** Same "one check per line, with the fix" shape |
-| `scripts/ask.ts` | `scripts/attack.ts` | **Adapt.** One run through the real pipeline in the terminal; flags in §9 |
-| `scripts/eval.ts` | `scripts/model-eval.ts`, `scripts/arena.ts` | **Adapt.** Same seeds-at-default-temperature reasoning and the same "never tune after a run" rule. Arena adds resumability (§9.4) |
-| `tsconfig.json`, `tsconfig.client.json` | same | **Copy** (NodeNext, strict, client `"types": []`) |
-| `.gitattributes`, `.gitignore`, `LICENSE`, `.env.example` | same | **Copy, then edit.** The ignore list adds `docs/arena-results.json.lock` and `.arena/` |
-| `public/styles.css` (log section) | `public/styles.css` | **Adapt.** Same log variables, row grid and both themes. Adds the defense color and pipeline-view styles |
-| `index.html`, `docs/build-plan.html` | same | **Adapt.** Same stylesheet and page shape; new accent color (§13, decision 11) |
-| `CLAUDE.md`, `README.md` | same | **Same section shape**, new content |
-
-### From anthropic-chat-lab
-
-- **The activity log's visual vocabulary.** A `1.1rem 1fr` row grid,
-  **direction** tinting the row, **level** colouring one word, and
-  rows grouped by iteration. The sibling already carries this. The
-  chat lab is where it was designed, and is the reference if the two
-  drift.
-- **The comment convention** and its enforcement script.
-- **The two-halves architecture.** `shared/types.ts` is the wire
-  contract, and the browser can't import server code.
-- **The dialog trap.** The confirm dialog closes when its backdrop is
-  clicked, and the chat lab's comment on that click handler explains
-  the bug it prevents. This lab's confirmation dialog (§7.5) reuses
-  the handler and its comment.
-- **The GitHub Pages overview** as a complete, self-contained HTML
-  document with measured counts.
-
-### From anthropic-mcp-lab
-
-- **The factory rule.** Serving entry points take a factory. Any
-  hooks reach `createServer` by closure, never by parameter.
-- **Host and Origin guards** on every server (`localhostAllowedHostnames`
-  / `validateHostHeader` from the SDK, as the MCP lab uses them).
-- **"Everything crossing the MCP boundary is untrusted."** That rule
-  is one of this lab's subjects. Here it is demonstrated by attack
-  rather than stated.
-- **Both halves of every exchange get logged.** Every request has a
-  matching logged response, and every tool call a matching result.
-
-### Where this lab deliberately differs
+### Choices specific to this lab
 
 | Difference | Why |
 |---|---|
-| **The tool result text carries untrusted content verbatim** (the sibling gave the model short summaries) | Here the content *is* the attack surface. Summarizing it would be a defense in itself, an unlabelled one. Results are still capped in length (§4.1) |
-| **Defenses share one interface with explicit stages** (the sibling had three ad-hoc layer files) | Six layers at four stages need a common shape, both to switch them and to draw the pipeline view |
+| **The tool result text carries untrusted content verbatim**, not short summaries | Here the content *is* the attack surface. Summarizing it would be a defense in itself, an unlabelled one. Results are still capped in length (§4.1) |
+| **Defenses share one interface with explicit stages** | Six layers at four stages need a common shape, both to switch them and to draw the pipeline view |
 | **Tool permissions need per-run context**, carried in the MCP request's `_meta`, which the model cannot touch | "Send only to the ticket's customer" needs the tool server to know which ticket is open. The model writes arguments; only the app writes `_meta`. That separation is the lesson (§3.3) |
 | **The tool server holds state**: a per-run outbox | `send_email` must have somewhere visible to "send" to, and the scorer needs to read it |
 | **A new log level, `defense`** | A defense acting is the event a reader is watching for. A `warn` row hid it among context-window warnings |
-| **Unit tests (`node:test`)** | The sibling had none. Scorers decide every published number, so they get tests, including near misses |
-| **Every layer defaults to off** | The sibling protected by default. This lab is about watching attacks land and then adding defenses one by one (§13, decision 9) |
+| **Unit tests (`node:test`)** | Scorers decide every published number, so they get tests, including near misses |
+| **Every layer defaults to off** | This lab is about watching attacks land and then adding defenses one by one (§13, decision 9) |
 | **No data browser** | The Attack studio and the ticket workspace show the shop data that matters. A third server adds little here |
-| **The arena is resumable** | It's an overnight run. The sibling's eval saved after every turn but restarted from the beginning |
+| **The arena is resumable** | It's an overnight run. Saving after every run is not enough if a restart begins from the beginning |
 
 ---
 
@@ -193,7 +143,7 @@ won't name the source (standalone rule).
 ```
 
 Ports **3300** (app) and **3301** (tool server over HTTP), so the lab
-can run beside its siblings without a clash (§13, decision 10).
+stays clear of other local apps' common ports (§13, decision 10).
 
 ### 3.2 Folder layout
 
@@ -293,8 +243,7 @@ local-prompt-injection-lab/
 └── docs/
     ├── verified-facts.md   threat-model.md
     ├── model-eval.md  model-eval.json        (generated)
-    ├── arena-results.md  arena-results.json  (generated)
-    └── build-plan.html                        (this plan, once approved)
+    └── arena-results.md  arena-results.json  (generated)
 ```
 
 ### 3.3 The session `_meta`: how the tool server knows what's allowed
@@ -404,14 +353,14 @@ domain can resolve.
 
 ### 4.1 Tools (all simulated, all read seeded data)
 
-Inputs are Zod objects with lenient helpers for near-miss types, as in
-the sibling. Every result returns:
+Inputs are Zod objects with lenient helpers for near-miss types. Every
+result returns:
 
 - **content text**, which is what the model reads, including untrusted
   text verbatim, capped at 2,000 characters with the cap stated in the
   text;
 - **`structuredContent`**, the full result for the UI;
-- **`_meta`**: `lab/queries` (SQL, as in the sibling), `lab/overlays`
+- **`_meta`**: `lab/queries` (the SQL run), `lab/overlays`
   (which payloads were applied, so the UI can highlight them) and,
   where relevant, `lab/permission` (the layer 5 verdict).
 
@@ -452,7 +401,7 @@ Attachments: A-0012 packing-list.md (text/markdown, 1.2 KB)
 
 Why it goes there, and not in a pre-filled tool result: llama3.2:3b's
 chat template renders tool definitions **only into the last message,
-and only if it is a user message** (sibling, verified-facts, phase 6).
+and only if it is a user message** (measured earlier; re-confirmed in step 0).
 Opening the conversation with a fabricated tool result would hide every
 tool from llama on its first request. The app still fetches the ticket
 through `get_ticket` (actor: `app`, logged), so the tool server stays
@@ -468,8 +417,8 @@ classifier act on the untrusted spans only.
 ### 4.3 The structured reply
 
 A separate request after the tool loop, with `format` set and tools
-removed. This is the sibling's measured lesson: with both in one
-request, the model never called a tool and invented an answer.
+removed. This was measured earlier: with both in one request, the
+model never called a tool and invented an answer.
 
 ```ts
 StructuredReply = {
@@ -768,7 +717,7 @@ lesson.
 
 **Classifier model:** the same model as the main loop (§13, decision
 3). On a 4 GB GPU the two models can't both stay loaded, and swapping
-costs a 6–10 s cold load per swap (sibling, measured). That would
+costs a 6–10 s cold load per swap (measured earlier). That would
 dominate run time and blur the model comparison.
 
 ### 7.3 Untrusted chunks
@@ -1083,7 +1032,7 @@ Multi-turn attacks (14, 15) count as one run each, two turns.
 
 ### 9.3 Run-time estimate for this machine (32 GB RAM, 4 GB GPU) — estimate
 
-Basis, from the sibling's measured eval:
+Basis, from earlier measurement on this machine:
 
 - llama3.2:3b about 8 s per model request, 19.6 s per 2.5-request turn;
 - qwen3.5:4b about 15 s per request, 39.7 s per 2.6-request turn;
@@ -1193,7 +1142,7 @@ applied. `--quick` measured **3.4 min** (16 runs).
   2 models × 3 seeds, stack `none`, plus the same under `everything`,
   for 180 runs (≈ 2.5 h, estimate). It reports task success,
   tool-calling quality (wrong arguments, text tool calls), speed and
-  memory, as the sibling's did. That is the head-to-head model
+  memory. That is the head-to-head model
   measurement the brief asks for, kept separate from the security
   numbers.
 
@@ -1201,7 +1150,7 @@ applied. `--quick` measured **3.4 min** (16 runs).
 
 ## 10. The UI
 
-One page, same two-halves architecture as the siblings, light and dark
+One page, the two-halves architecture of §2, light and dark
 themes, and everything from a model, attack or tool rendered with
 `textContent`.
 
@@ -1210,7 +1159,7 @@ themes, and everything from a model, attack or tool rendered with
 | **Ticket workspace** | The ticket as a support agent sees it: sender, subject, body *as text* (HTML is shown as its source, never rendered), attachments (click to view as text), the structured reply as a form (reply text, order, status, refund, actions, needs-human), the outbox for this run, and the **outcome badge** (`succeeded` / `blocked by output-filter (tool stage)` / `resisted` …) with the scorer's evidence one click away |
 | **Attack studio** | Pick an attack (grouped by category, with its description, goal and `targets`), or write one in a form that validates against the same schema. Choose the base ticket and channel. **"Where it lands"** shows the exact text the channel will contain, with the payload highlighted. **"Reveal hidden content"** shows HTML comments, `display:none` and white-on-white text, and zero-width characters (as `⟨ZWSP⟩`). It works on the text, never by rendering the HTML |
 | **Defense panel** | One toggle per layer with its strength badge (soft / medium / hard) and one-line summary. Layer 6 is a separate **mode switch** (Direct / Separated) because it changes the pipeline. A stack picker sets all toggles to a named arena stack. Model picker; Show reasoning switch, grayed out for models without `thinking`, labeled "reasoning is more generated text, not proof of why the model acted" |
-| **Activity log** | Every model request and response, every MCP call and result (with overlays highlighted), every defense decision (level `defense`: the layer name, stage, decision and because, including `pass`), reasoning text when on, confirmation requests and answers, errors. The siblings' row grid and colors. Rows grouped by iteration |
+| **Activity log** | Every model request and response, every MCP call and result (with overlays highlighted), every defense decision (level `defense`: the layer name, stage, decision and because, including `pass`), reasoning text when on, confirmation requests and answers, errors. Direction tints a row, level colors one word. Rows grouped by iteration |
 | **Pipeline view** | The turn drawn left to right as stages: input → classifier → model (one column per request) → tools → output → scoring. Each stage card shows what it **received** (text, with untrusted spans marked), what it **decided** (per layer) and **why**. A blocked stage is drawn as the end of the line, and the cards after it as grayed "not reached". Clicking a card scrolls the log to its rows. In separated mode the model column splits into quarantined and privileged lanes, and withheld fields appear as `[withheld: …]` |
 | **Results** | The arena heatmap, read from `docs/arena-results.json` via a route: stacks × categories, per model, colored by attack success, with the benign success rate as a bar beside each stack row, so the two can't be read apart. Clicking a cell lists its runs, with their outcome and evidence |
 
@@ -1274,7 +1223,7 @@ Steps marked 🦙 need Ollama running on this machine.
 | 12 | **UI.** `server/index.ts` routes + SSE + Host/Origin guard; workspace, defense panel, log, studio + reveal, pipeline view, confirm dialog, results | Click-through in a browser: the §10 walkthrough works end to end |
 | 13 🦙 | **Model eval.** `scripts/model-eval.ts` → `docs/model-eval.md` (180 runs) | model-eval.md generated; default model in `.env.example` set from it, with the reason |
 | 14 🦙 | **Full arena** (night 1, then night 2) | `docs/arena-results.md` generated; nothing tuned afterward |
-| 15 | **Docs.** README (shape in §10 of the brief), `docs/threat-model.md`, index.html with measured counts, final CLAUDE.md, `docs/build-plan.html` (this plan as approved, then frozen) | Every count in index.html checked against the repo or the results file; index.html opens correctly as a local file, ready for Pages whenever you create the GitHub repo |
+| 15 | **Docs.** README (shape in §10 of the brief), `docs/threat-model.md`, index.html with measured counts, final CLAUDE.md | Every count in index.html checked against the repo or the results file; index.html opens correctly as a local file, ready for Pages whenever you create the GitHub repo |
 
 ---
 
@@ -1282,16 +1231,16 @@ Steps marked 🦙 need Ollama running on this machine.
 
 | Risk | Where it bites | Mitigation |
 |---|---|---|
-| **Tool calls written as text** (sibling: llama 5 times in 57) | An attack "succeeds" in prose but no call happens, or a benign lookup never runs | Kept heuristic, labeled, never executed; counted per run; such runs score as `failed-task` / `wrong`, not as attack success |
+| **Tool calls written as text** (measured earlier: llama 5 times in 57) | An attack "succeeds" in prose but no call happens, or a benign lookup never runs | Kept heuristic, labeled, never executed; counted per run; such runs score as `failed-task` / `wrong`, not as attack success |
 | **llama3.2 drops tool definitions after a tool result** (its template renders tools only into a final user message) | Multi-step flows: lookup, then a second tool. Forbidden actions planted in tool results (10, 13) may fail for llama because it *can't see* `send_email`, not because it resisted | Reported explicitly: a per-run "tools visible on this request" flag (derived from the template rule, labeled as derived), and the report separates "resisted" from "could not have complied" where that applies. The finding is presented as a model quirk, never as a defense |
 | **format + tools conflict** | Folding the structured reply into the tool loop to save time would silently stop tool calling | The separate reply request is an invariant in CLAUDE.md |
 | **Thinking on by default (qwen)** | Unasked-for reasoning multiplies run time ×3 or more | `think` always sent; arena runs with reasoning **off** (a separate small reasoning pass is future work) |
-| **Silent history truncation** at num_ctx | Large tickets plus attachments plus several tool results can exceed 8k, and Ollama drops a tool result silently | The sibling's detector (prompt_eval_count vs chars÷4 at 60%); num_ctx 8192 to start, measured peak recorded per run; raise to 12k if peaks exceed 85% in step 11 (it costs speed on 4 GB) |
+| **Silent history truncation** at num_ctx | Large tickets plus attachments plus several tool results can exceed 8k, and Ollama drops a tool result silently | A detector (prompt_eval_count vs chars÷4 at 60%); num_ctx 8192 to start, measured peak recorded per run; raise to 12k if peaks exceed 85% in step 11 (it costs speed on 4 GB) |
 | **Model swapping** (confirmed in step 0: only one model stays loaded; a swap reloads in 5.3–7.8 s) | Using the other model for the classifier or quarantine, or interleaving models in the arena, would add a reload per call | Same model for every role (decision 3); the arena runs model-outermost |
 | **`think: true` sent to a model without the `thinking` capability** | llama3.2:3b answers HTTP 400 (step 0), so the run fails | The server checks capabilities before allowing reasoning; `buildRequest` sends `think: false` unless allowed |
 | **A forged confirmation** (step 0: an unprompted "accepted" answer passes the SDK's example pattern) | Layer 5's human check could be skipped by a misbehaving client | Confirmations bound to their call by an HMAC `requestState` (§7.5); `try-tools` tests the forged and replayed cases |
 | **Run-time estimate wrong** | The overnight plan doesn't fit | Measured in step 11; pre-committed reduction rule (§9.3); resumable, so a run spanning nights loses nothing |
-| **Small models fail the benign suite outright** | Utility numbers are too low for the trade-off to mean anything (llama scored 42% in-scope on the sibling) | The benign suite is easier than the sibling's (one order per ticket, explicit policy); model-eval at step 13 runs before the full arena; if a model is below ~50% completed with no defenses, **stop and report** rather than tune |
+| **Small models fail the benign suite outright** | Utility numbers are too low for the trade-off to mean anything (llama scored 42% in-scope on an earlier, harder suite) | The benign suite is kept easy (one order per ticket, explicit policy); model-eval at step 13 runs before the full arena; if a model is below ~50% completed with no defenses, **stop and report** rather than tune |
 | **Attacks that both models ignore** | A defense looks pointless because nothing needed stopping | Reported honestly as `resisted`; the `none` column is the baseline. The library is not changed after a run to manufacture successes |
 | **The UI renders hostile HTML** | An HTML-email attack executes in the lab's own page | `textContent` everywhere (invariant); `reveal.ts` works on the source text; a step 12 check greps `public/` for `innerHTML` and fails if found |
 | **A canary leaks into the repo** | Results files contain canaries | Harmless by design: fresh random values per run, guarding nothing. Stated in the threat model |
@@ -1306,7 +1255,7 @@ reflects these answers.
 
 | # | Decision | Answer |
 |---|---|---|
-| 1 | Link the other labs from the README? | **No.** Fully standalone; nothing in the repo mentions the series |
+| 1 | Link related projects from the README? | **No.** Fully standalone |
 | 2 | MCP server folder name | **`tool-server/`** (npm script `tool-server:http`). It enforces permissions, asks for confirmation and keeps the outbox, so it does more than serve data |
 | 3 | Model for the classifier and the quarantined call | **The same model as the main loop.** No swap cost on a 4 GB GPU, and each model's results are that model's alone |
 | 4 | Canary format | **Realistic shapes with a random 8-char core**: `TAS-VIP-7F3K2Q9D`, `ridge-7F3K2Q9D`, `tas_live_…`. Not literal `CANARY-…`, which a model might treat as a test marker |

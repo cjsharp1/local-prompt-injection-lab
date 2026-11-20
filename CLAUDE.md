@@ -258,7 +258,4 @@ from `main`. It is a complete HTML document (doctype, `<html lang>`,
 Pages renders it in quirks mode; without the charset, em-dashes become
 mojibake.
 
-`docs/build-plan.html` is the plan as a historical record. Leave its
-contents as they were when written.
-
 Commits: plain imperative, descriptive, no prefixes.
